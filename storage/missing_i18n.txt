@@ -1,0 +1,261 @@
+$label)
+$title ?? 'Fitur']) @section('content')
+$title]) @section('content')
+$title]) @section('content') @if (session('success'))
+$value) { $label = $metaLabels[$key] ?? ucwords(str_replace('_', ' ', (string) $key)); $displayValue = is_scalar($value) || $value === null ? (string) ($value ?? '-') : json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); $lines[] = $label.': '.$displayValue; } return implode("\n", $lines); }; @endphp @if (session('success'))
+(bool) $value); @endphp
+(NIS: )
+. Mode Semua Table: ketik
+@auth
+@csrf
+@csrf @if ($role === 'pembimbing_pkl')
+@csrf @method('DELETE')
+@csrf @method('PUT')
+@else
+@else - @endif
+@else @if ($isSuperadmin)
+@elseif ($isSuperadmin)
+@elseif (($tab ?? '') === 'restore')
+@elseif (in_array($activeRole, ['pembimbing_pkl', 'instruktur', 'kajur'], true))
+@empty
+@enderror
+@endforeach
+@endforelse
+@endif
+@endif @endauth
+@endif @endif
+@endif @error('captcha')
+@endif @foreach ($elements as $element) @if (is_string($element))
+@endif @if (! empty($kpiCards))
+@endif @if (! empty($showAnalytics))
+@endif @if ($activeRole === 'pembimbing_pkl' && ! empty($pembimbingSummary))
+@endif @if ($activeRole === 'siswa' || in_array($activeRole, ['pembimbing_pkl', 'instruktur', 'kajur'], true))
+@endif @if ($activeRole === 'wali_kelas' && ! empty($waliSummary))
+@endif @if (session('error'))
+@endif @if(session('error'))
+@error('identifier')
+@foreach ($attendances as $attendance)
+@foreach ($items as $item)
+@foreach ($kpiCards as $card)
+@foreach ($menus as $menu)
+@foreach ($pembimbingSummary['cards'] as $card)
+@foreach ($pklLocations as $location)
+@foreach ($roles as $role)
+@foreach ($rows as $row)
+@foreach ($staffRoles as $role)
+@foreach ($types as $type)
+@foreach (($departmentOptions ?? []) as $department)
+@foreach (($perPageOptions ?? [10, 20, 50, 100]) as $opt)
+@foreach (($waliSummary['cards'] ?? []) as $card)
+@foreach(($tables ?? []) as $table)
+@forelse ($items as $item)
+@forelse ($pembimbingSummary['pendingAbsensi'] as $item)
+@forelse ($pembimbingSummary['pendingLaporan'] as $item)
+@forelse ($pembimbingSummary['pendingPengajuan'] as $item)
+@forelse ($users as $item)
+@forelse($backups as $item)
+@forelse($locations as $item)
+@if (! empty($isKesiswaan) && empty($selectedDepartment))
+@if (! empty($isKesiswaan))
+@if ($activeRole === 'kesiswaan' && empty($selectedDepartment))
+@if ($activeRole === 'kesiswaan')
+@if ($activeRole === 'siswa')
+@if ($hasDeletedTabAccess)
+@if ($hasValidCoordinate)
+@if ($location)
+@if ($logoExists)
+@if ($mode === 'pdf')
+@if ($tab === 'active')
+@if ($todayAttendance)
+@if (($analyticsMode ?? 'daily') === 'monthly')
+@if (($captchaMode ?? 'offline') === 'online' && !empty($recaptchaSiteKey))
+@if (($captchaMode ?? 'offline') === 'online' && !empty($recaptchaSiteKey)) @endif
+@if (($tab ?? 'active') !== 'active')
+@if (($tab ?? 'active') === 'active')
+@if (($tab ?? 'backup') === 'backup')
+@if (empty($waliSummary['className']))
+@if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot'))) @vite(['resources/css/app.css', 'resources/js/app.js']) @else @endif
+@if (Route::has('login'))
+@if (Route::has('register'))
+@if (session('success'))
+@if($mustReset) For security, the default password must be changed before continuing. @else Please change your account password. @endif
+@if(session('success'))
+@php $defaultLogoPath = 'image/download.png'; $configuredLogoPath = trim((string) ($appProfile['logo'] ?? '')); $configuredLogoPath = $configuredLogoPath !== '' ? ltrim($configuredLogoPath, '/') : $defaultLogoPath; $isExternalLogo = str_starts_with($configuredLogoPath, 'http://') || str_starts_with($configuredLogoPath, 'https://'); $logoPath = $configuredLogoPath; $logoExists = $isExternalLogo || is_file(public_path($configuredLogoPath)); if (! $logoExists && is_file(public_path($defaultLogoPath))) { $logoPath = $defaultLogoPath; $logoExists = true; } $faviconPath = trim((string) ($appProfile['favicon'] ?? '')); $faviconPath = $faviconPath !== '' ? ltrim($faviconPath, '/') : $logoPath; $isExternalFavicon = str_starts_with($faviconPath, 'http://') || str_starts_with($faviconPath, 'https://'); if (! $isExternalFavicon && ! is_file(public_path($faviconPath))) { $faviconPath = 'favicon.ico'; } $appName = $appProfile['name'] ?? config('app.name', 'Absensi PKL'); @endphp
+{$initial}
+| Total Siswa:
+62812xxxx
+'Absensi Harian']) @section('content') @if (session('success'))
+Active ()
+Actual:
+Aktif ()
+Aktivasi Email
+Akun belum aktif. Klik link di email Anda. Jika belum masuk, kirim ulang.
+Alasan:
+all
+all() as $error)
+Ambil Bukti Pengajuan
+Ambil Foto (Kamera)
+any())
+Approve
+atau
+Back to forgot password
+Back to login
+bar
+Batas check-in: -
+Batas check-out: -
+Belum ada absensi untuk hari ini.
+Belum ada foto selfie.
+Buka Absensi Harian
+Bukti foto wajib diambil langsung dari kamera perangkat.
+Check-in:
+Check-out:
+Confirm New Password
+Confirm Password
+Contoh Isi CSV
+create_staff
+create_student
+Current Password
+currentPage())
+Daftar
+Daftar Laporan Harian Menunggu Review ()
+daily
+dan siswa wajib reset saat login pertama.
+Delete Permanent
+Deleted ()
+Deploy now
+Discord Webhook URL
+Documentation
+doughnut
+Download
+Edit
+Email
+Enter your account email, we will send a password reset link.
+Error
+Export Excel
+Export PDF
+File CSV
+Foto wajib diambil langsung dari kamera perangkat.
+hasMorePages())
+hasPages())
+Header fleksibel (delimiter `,` atau `;`). Contoh yang didukung: `username;password;firstname;lastname;email;role` atau `nis,name,email,phone,password,role`. Role: `murid/siswa`, `guru`, `kepsek`. Kolom "column order" hanya untuk urutan nama kolom, bukan untuk isi filter role. Gunakan kolom filter gabungan untuk role/kelas sekaligus (kelas tetap exact match).
+Header wajib:
+high
+https://discord.com/api/webhooks/...
+id]['status'] ?? null; $statusLabel = $leaveStatus ? strtoupper(str_replace('_', ' ', $leaveStatus)) : ($attendanceStatus ? strtoupper(str_replace('_', ' ', $attendanceStatus)) : 'BELUM CHECK-IN'); @endphp
+Import & Export User
+Import CSV
+Import Data Siswa via CSV
+'Import Siswa CSV']) @section('content') @if (session('success'))
+isEmpty())
+izin
+Jawab soal berikut:
+Jenis:
+Jika email diganti, verifikasi email akan diminta ulang.
+Judul Website
+Kembali ke Login
+Kembali ke login
+Kirim Ulang Link Verifikasi
+Konfirmasi Password
+Kontak
+Label
+Laporan #
+'Laporan Cetak']) @section('content')
+'Laporan Diagram']) @section('content')
+Laracasts
+Laravel has an incredibly rich ecosystem.
+last_month
+Let's get started
+line
+Log in
+Login NIS | Absensi PKL
+Lokasi PKL belum ditentukan oleh admin.
+low
+Mandatory Password Reset |
+Masukkan hasil
+medium
+Menu
+monthly
+name), 0, 1) ?: 'U'); $defaultAvatarSvg = "
+New Password
+Next
+NIS
+nis,nama
+nis,nama 230001,Andi Saputra 230002,Siti Aisyah
+nis,name
+No WA
+No WhatsApp
+Notifikasi edit/hapus dikirim ke webhook ini. Pastikan channel Discord hanya untuk superadmin.
+NUPTK
+onFirstPage())
+open
+Pagination Navigation
+Password tidak perlu diisi di file. Sistem otomatis set password default
+'Pengajuan Izin / Sakit']) @section('content') @if (session('success'))
+Pengaturan Discord
+Period: | Generated:
+Periode: | Generate:
+Peta Lokasi Check-in
+Peta Lokasi Check-out
+Peta Lokasi PKL
+pie
+'Pilih jurusan dulu, lalu akses data jurusan tersebut.', ], ]; $capability = $roleCapability[$activeRole] ?? null; @endphp @if ($capability)
+Plan:
+Prev
+Print
+profile_photo_path) : $defaultAvatar; @endphp
+Read the
+Register
+Register |
+Registrasi Siswa
+Reject
+reject_checkin
+reject_checkout
+reject_izin
+reject_sakit
+report)
+Reset Password
+Reset Password Email
+Reset Password via Email
+Reset Password via WhatsApp
+Reset Password WhatsApp
+Resolve
+resolved
+resolved_at)
+Restore
+Ringkasan checkout:
+Role
+sakit
+Save New Password
+Semua
+Send Reset Link
+Setelah daftar, akun wajib aktivasi email sebelum login.
+'Setting Web']) @section('content') @if (session('success'))
+Simpan Webhook
+single
+siswa
+Slug fitur:
+Status Laporan:
+Status:
+Struktur menu siap, implementasi detail modul bisa dilanjutkan per fitur.
+Tagline
+Tampilkan password
+Tes Kirim Notifikasi
+this_month
+Titik: , | Radius: m
+today
+Total
+Update Password
+'UTC', ]; @endphp
+'Validasi '.$roleLabel[$role]]) @section('content') @if (session('success'))
+'Validasi Pengajuan '.$roleLabel[$role]]) @section('content') @if (session('success'))
+Verifikasi Email
+'View', }; @endphp
+Waktu check-in tercatat otomatis saat tombol diklik ().
+Waktu check-out tercatat otomatis saat tombol diklik ().
+Watch video tutorials at
+We suggest starting with the following.
+weekly
+WhatsApp Code
+WhatsApp Number
+yearly
+yesterday
