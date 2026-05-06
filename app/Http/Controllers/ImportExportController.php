@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Department;
+use App\Models\SchoolClass;
 use App\Models\User;
+use App\Support\MenuAccess;
 use App\Support\UsernameResolver;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
@@ -22,6 +25,10 @@ class ImportExportController extends Controller
     public function index(): View
     {
         $users = User::query();
+        $roles = ['siswa', 'admin_sekolah', 'pembimbing_pkl', 'instruktur', 'kajur', 'wali_kelas', 'kesiswaan', 'wakil_kepsek', 'kepsek'];
+        $departments = User::query()->whereNotNull('department_name')->where('department_name', '!=', '')->distinct()->orderBy('department_name')->pluck('department_name')->values();
+        $classes = User::query()->whereNotNull('class_name')->where('class_name', '!=', '')->distinct()->orderBy('class_name')->pluck('class_name')->values();
+        $locations = User::query()->whereHas('pklLocation')->with('pklLocation:id,name')->get()->pluck('pklLocation.name')->filter()->unique()->values();
 
         return view('import-export.index', [
             'title' => 'Import & Export User',
@@ -30,6 +37,10 @@ class ImportExportController extends Controller
                 'instruktur' => (clone $users)->where('role', 'instruktur')->count(),
                 'kepsek' => (clone $users)->where('role', 'kepsek')->count(),
             ],
+            'exportRoles' => $roles,
+            'exportDepartments' => $departments,
+            'exportClasses' => $classes,
+            'exportLocations' => $locations,
         ]);
     }
 
@@ -40,17 +51,73 @@ class ImportExportController extends Controller
 
         return response()->streamDownload(function (): void {
             $out = fopen('php://output', 'w');
-            fputcsv($out, ['nis_nuptk', 'name', 'email', 'password', 'class_or_position'], ';');
-            fputcsv($out, ['10000003', 'Siswa PKL', '10000003@gmail.com', '10000003', 'RPL XII'], ';');
-            fputcsv($out, ['112507454', 'Mita Afrianti', '112507454@gmail.com', '112507454', 'guru'], ';');
-            fputcsv($out, ['99000001', 'Kepala Sekolah', '99000001@gmail.com', '99000001', 'kepsek'], ';');
+            $this->writeCsvLineNoQuotes($out, ['nis_nuptk', 'nama', 'email', 'password', 'role', 'jurusan', 'kelas', 'tempat_pkl']);
+            $this->writeCsvLineNoQuotes($out, ['10000003', 'Siswa PKL', 'siswa@example.com', '12345678', 'siswa', 'RPL', 'XII RPL 1', 'PT Maju']);
+            $this->writeCsvLineNoQuotes($out, ['-', 'Admin Sekolah', 'admin@example.com', '12345678', 'admin_sekolah', '-', '-', '-']);
+            $this->writeCsvLineNoQuotes($out, ['-', 'Instruktur PKL', 'instruktur@example.com', '12345678', 'instruktur', '-', '-', 'PT Maju']);
 
             fclose($out);
         }, $filename, $headers);
     }
 
+    public function exportUsersData(Request $request): StreamedResponse|RedirectResponse
+    {
+        $this->ensureImportExportAccess($request);
+
+        $filters = $request->validate([
+            'role' => ['nullable', 'string', 'max:50'],
+            'jurusan' => ['nullable', 'string', 'max:100'],
+            'kelas' => ['nullable', 'string', 'max:100'],
+            'tempat_pkl' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $query = User::query()
+            ->with('pklLocation:id,name')
+            ->when(($filters['role'] ?? '') !== '', fn ($q) => $q->where('role', (string) $filters['role']))
+            ->when(($filters['jurusan'] ?? '') !== '', fn ($q) => $q->where('department_name', (string) $filters['jurusan']))
+            ->when(($filters['kelas'] ?? '') !== '', fn ($q) => $q->where('class_name', (string) $filters['kelas']))
+            ->when(($filters['tempat_pkl'] ?? '') !== '', fn ($q) => $q->whereHas('pklLocation', fn ($loc) => $loc->where('name', (string) $filters['tempat_pkl'])));
+
+        $rows = $query->orderBy('name')->get(['nis', 'nuptk', 'name', 'email', 'role_id', 'department_name', 'class_name', 'pkl_location_id']);
+        $filename = 'export_user_'.now()->format('Ymd_His').'.csv';
+        $headers = ['Content-Type' => 'text/csv'];
+
+        return response()->streamDownload(function () use ($rows): void {
+            $out = fopen('php://output', 'w');
+            $this->writeCsvLineNoQuotes($out, ['nis_nuptk', 'nama', 'email', 'role', 'jurusan', 'kelas', 'tempat_pkl']);
+            foreach ($rows as $row) {
+                $this->writeCsvLineNoQuotes($out, [
+                    (string) ($row->nis ?: $row->nuptk ?: '-'),
+                    (string) ($row->name ?? '-'),
+                    (string) ($row->email ?? '-'),
+                    (string) ($row->role ?? '-'),
+                    (string) ($row->department_name ?? '-'),
+                    (string) ($row->class_name ?? '-'),
+                    (string) ($row->pklLocation?->name ?? '-'),
+                ]);
+            }
+            fclose($out);
+        }, $filename, $headers);
+    }
+
+    /**
+     * @param resource $out
+     * @param array<int, scalar|null> $fields
+     */
+    private function writeCsvLineNoQuotes($out, array $fields): void
+    {
+        $clean = array_map(function ($value): string {
+            $text = trim((string) ($value ?? ''));
+            $text = str_replace(["\r", "\n", ';'], [' ', ' ', ','], $text);
+            return $text;
+        }, $fields);
+
+        fwrite($out, implode(';', $clean)."\n");
+    }
+
     public function importUsers(Request $request): RedirectResponse
     {
+        $this->ensureImportExportAccess($request);
         if (function_exists('set_time_limit')) {
             @set_time_limit(0);
         }
@@ -68,7 +135,7 @@ class ImportExportController extends Controller
 
         $delimiter = $this->detectDelimiter($file->getRealPath());
         $processed = 0;
-        $summary = ['siswa' => 0, 'instruktur' => 0, 'kepsek' => 0];
+        $summary = $this->emptyRoleSummary();
         [$preparedRows, $skipped, $identifiers, $emails, $headerError] = $this->readStrictTemplateRowsFromHandle($handle, $delimiter);
         fclose($handle);
 
@@ -80,7 +147,7 @@ class ImportExportController extends Controller
             return back()->with(
                 'success',
                 "Import selesai: {$processed} baris diproses, {$skipped} baris dilewati. ".
-                "Siswa: {$summary['siswa']}, Guru: {$summary['instruktur']}, Kepsek: {$summary['kepsek']}."
+                $this->formatSummary($summary)
             );
         }
 
@@ -107,7 +174,7 @@ class ImportExportController extends Controller
             $user = $existingByIdentity ?? $existingByEmail ?? new User();
 
             if ($user->exists && $user->role !== $role) {
-                $managedRoles = ['siswa', 'instruktur', 'kepsek'];
+                $managedRoles = $this->importableRoles();
                 if (! in_array((string) $user->role, $managedRoles, true)) {
                     $skipped++;
                     continue;
@@ -126,9 +193,13 @@ class ImportExportController extends Controller
             $user->phone = $phone;
             $user->role = $role;
             $user->nis = $role === 'siswa' ? $identifier : null;
-            $user->nuptk = $role !== 'siswa' ? $identifier : null;
+            $user->nuptk = $role !== 'siswa' && ! str_contains($identifier, '@') ? $identifier : null;
             $user->class_name = $className;
             $user->department_name = $departmentName ?? $this->extractDepartment((string) ($className ?? ''));
+            if (! $this->isAcademicMasterValid($user->department_name, $user->class_name)) {
+                $skipped++;
+                continue;
+            }
             $user->updated_by = $request->user()?->id;
             $user->is_deleted = false;
             $user->must_reset_password = true;
@@ -172,12 +243,13 @@ class ImportExportController extends Controller
         return back()->with(
             'success',
             "Import selesai: {$processed} baris diproses, {$skipped} baris dilewati. ".
-            "Siswa: {$summary['siswa']}, Guru: {$summary['instruktur']}, Kepsek: {$summary['kepsek']}."
+            $this->formatSummary($summary)
         );
     }
 
     public function importUsersInit(Request $request): JsonResponse
     {
+        $this->ensureImportExportAccess($request);
         if (function_exists('set_time_limit')) {
             @set_time_limit(0);
         }
@@ -224,7 +296,7 @@ class ImportExportController extends Controller
             'processed' => 0,
             'runtime_skipped' => 0,
             'parse_skipped' => $parseSkipped,
-            'summary' => ['siswa' => 0, 'instruktur' => 0, 'kepsek' => 0],
+            'summary' => $this->emptyRoleSummary(),
             'rows' => $rows,
             'total_rows' => count($rows) + $parseSkipped,
             'identity_map_ids' => $identityMapIds,
@@ -242,6 +314,7 @@ class ImportExportController extends Controller
 
     public function importUsersProcess(Request $request): JsonResponse
     {
+        $this->ensureImportExportAccess($request);
         if (function_exists('set_time_limit')) {
             @set_time_limit(0);
         }
@@ -312,7 +385,7 @@ class ImportExportController extends Controller
             $departmentName = $row['department_name'] ?? null;
             $passwordRaw = (string) ($row['password'] ?? '');
 
-            if (! in_array($role, ['siswa', 'instruktur', 'kepsek'], true) || $name === '' || $identifier === '' || $email === '') {
+            if (! in_array($role, $this->importableRoles(), true) || $name === '' || $email === '') {
                 $state['runtime_skipped'] = (int) ($state['runtime_skipped'] ?? 0) + 1;
                 $state['cursor'] = (int) ($state['cursor'] ?? 0) + 1;
                 continue;
@@ -334,7 +407,7 @@ class ImportExportController extends Controller
             }
 
             if ($user->exists && $user->role !== $role) {
-                $managedRoles = ['siswa', 'instruktur', 'kepsek'];
+                $managedRoles = $this->importableRoles();
                 if (! in_array((string) $user->role, $managedRoles, true)) {
                     $state['runtime_skipped'] = (int) ($state['runtime_skipped'] ?? 0) + 1;
                     $state['cursor'] = (int) ($state['cursor'] ?? 0) + 1;
@@ -354,9 +427,14 @@ class ImportExportController extends Controller
             $user->phone = $phone;
             $user->role = $role;
             $user->nis = $role === 'siswa' ? $identifier : null;
-            $user->nuptk = $role !== 'siswa' ? $identifier : null;
+            $user->nuptk = $role !== 'siswa' && ! str_contains($identifier, '@') ? $identifier : null;
             $user->class_name = $className;
             $user->department_name = $departmentName ?? $this->extractDepartment((string) ($className ?? ''));
+            if (! $this->isAcademicMasterValid($user->department_name, $user->class_name)) {
+                $state['runtime_skipped'] = (int) ($state['runtime_skipped'] ?? 0) + 1;
+                $state['cursor'] = (int) ($state['cursor'] ?? 0) + 1;
+                continue;
+            }
             $user->updated_by = $request->user()?->id;
             $user->is_deleted = false;
             $user->must_reset_password = true;
@@ -511,8 +589,15 @@ class ImportExportController extends Controller
         return match ($value) {
             '' => '',
             'murid', 'siswa', 'student' => 'siswa',
-            'guru', 'teacher', 'instruktur', 'staff', 'pengajar' => 'instruktur',
+            'guru', 'teacher', 'staff', 'pengajar' => 'pembimbing_pkl',
+            'pembimbing', 'pembimbing_pkl' => 'pembimbing_pkl',
+            'instruktur' => 'instruktur',
+            'kajur' => 'kajur',
+            'wali_kelas', 'wali kelas' => 'wali_kelas',
+            'kesiswaan' => 'kesiswaan',
+            'admin_sekolah', 'admin sekolah' => 'admin_sekolah',
             'kepsek', 'kepala sekolah', 'kepala_sekolah', 'principal', 'headmaster', 'head of school', 'ks' => 'kepsek',
+            'wakil_kepsek', 'wakil kepsek', 'wakasek', 'wakil kepala sekolah' => 'wakil_kepsek',
             default => $value,
         };
     }
@@ -520,7 +605,7 @@ class ImportExportController extends Controller
     private function inferRole(array $data): string
     {
         $explicitRole = $this->normalizeRole((string) ($data['role'] ?? ''));
-        if (in_array($explicitRole, ['siswa', 'instruktur', 'kepsek'], true)) {
+        if (in_array($explicitRole, $this->importableRoles(), true)) {
             return $explicitRole;
         }
 
@@ -665,8 +750,19 @@ class ImportExportController extends Controller
         }
 
         $header = $this->normalizeHeaderRow($firstRow);
-        $requiredHeader = ['nis_nuptk', 'name', 'email', 'password', 'class_or_position'];
-        if ($header !== $requiredHeader) {
+        $header = array_values(array_filter($header, fn ($value) => trim((string) $value) !== ''));
+
+        $headerValid = count($header) >= 8
+            && in_array($header[0] ?? '', ['nis/nuptk', 'nis_nuptk'], true)
+            && in_array($header[1] ?? '', ['firstname', 'name', 'nama'], true)
+            && in_array($header[2] ?? '', ['email'], true)
+            && in_array($header[3] ?? '', ['password'], true)
+            && in_array($header[4] ?? '', ['role'], true)
+            && in_array($header[5] ?? '', ['department_name', 'jurusan'], true)
+            && in_array($header[6] ?? '', ['class_name', 'kelas'], true)
+            && in_array($header[7] ?? '', ['tempat_pkl', 'tempat pkl'], true);
+
+        if (! $headerValid) {
             return [[], 0, [], [], 'Header CSV tidak sesuai template. Gunakan file template yang didownload dari sistem.'];
         }
 
@@ -687,39 +783,44 @@ class ImportExportController extends Controller
                 'name' => $cells[1] ?? '',
                 'email' => $cells[2] ?? '',
                 'password' => $cells[3] ?? '',
-                'class_or_position' => $cells[4] ?? '',
+                'role' => $cells[4] ?? '',
+                'jurusan' => $cells[5] ?? '',
+                'kelas' => $cells[6] ?? '',
+                'tempat_pkl' => $cells[7] ?? '',
             ];
 
             $identifier = trim((string) ($mapped['nis_nuptk'] ?? ''));
             $name = trim((string) ($mapped['name'] ?? ''));
-            $classOrPosition = trim((string) ($mapped['class_or_position'] ?? ''));
-            $role = $this->inferRoleFromTemplateField($classOrPosition);
-
-            if ($identifier === '' || $name === '' || ! in_array($role, ['siswa', 'instruktur', 'kepsek'], true)) {
+            $role = $this->normalizeRole((string) ($mapped['role'] ?? ''));
+            $jurusan = $this->nullableToken((string) ($mapped['jurusan'] ?? ''));
+            $kelas = $this->nullableToken((string) ($mapped['kelas'] ?? ''));
+            $tempatPkl = $this->nullableToken((string) ($mapped['tempat_pkl'] ?? ''));
+            if ($role === 'superadmin' || ! in_array($role, $this->importableRoles(), true)) {
                 $skipped++;
                 continue;
             }
 
             $email = $this->normalizeEmail((string) ($mapped['email'] ?? ''), $identifier);
-            $className = $role === 'siswa' ? $this->normalizeTemplateClassName($classOrPosition) : '';
-            $departmentName = $role === 'siswa' ? $this->extractDepartment($className) : '';
-            if ($role !== 'siswa') {
-                $className = '';
-                $departmentName = '';
+            if (! $this->isImportRowValid($role, $identifier, $name, $email, (string) ($mapped['password'] ?? ''), $jurusan, $kelas, $tempatPkl)) {
+                $skipped++;
+                continue;
             }
 
             $preparedRows[] = [
                 'role' => $role,
                 'name' => $name,
-                'identifier' => $identifier,
+                'identifier' => $identifier !== '' ? $identifier : $email,
                 'email' => $email,
                 'phone' => null,
-                'class_name' => $className !== '' ? $className : null,
-                'department_name' => $departmentName !== '' ? $departmentName : ($role === 'siswa' ? $this->extractDepartment($className) : null),
+                'class_name' => $kelas,
+                'department_name' => $jurusan,
                 'password' => trim((string) ($mapped['password'] ?? '')),
+                'tempat_pkl' => $tempatPkl,
             ];
 
-            $identifiers[] = $identifier;
+            if ($identifier !== '') {
+                $identifiers[] = $identifier;
+            }
             $emails[] = $email;
         }
 
@@ -857,10 +958,10 @@ class ImportExportController extends Controller
             'user', 'user_name', 'userid', 'id_user', 'id_login', 'login', 'identifier' => 'username',
             'pass', 'passwd' => 'password',
             'nama', 'fullname', 'full_name', 'name' => 'firstname',
-            'last_name', 'kelas', 'classroom' => 'lastname',
+            'last_name', 'classroom' => 'lastname',
             'mail', 'e_mail' => 'email',
             'jabatan', 'position', 'status' => 'role',
-            'class', 'class_name', 'nama_kelas' => 'class_name',
+            'class', 'class_name', 'nama_kelas', 'kelas' => 'class_name',
             'jurusan', 'major' => 'department_name',
             'no_hp', 'hp', 'no_wa', 'wa', 'telp', 'telephone', 'phone_number' => 'phone',
             default => $normalized,
@@ -1043,12 +1144,49 @@ class ImportExportController extends Controller
     private function inferRoleFromTemplateField(string $classOrPosition): string
     {
         $normalizedRole = $this->normalizeRole($classOrPosition);
-        if (in_array($normalizedRole, ['instruktur', 'kepsek'], true)) {
+        if (in_array($normalizedRole, $this->importableRoles(), true)) {
             return $normalizedRole;
         }
 
         // Anything else in template field is treated as student class marker.
         return 'siswa';
+    }
+
+    private function importableRoles(): array
+    {
+        return ['siswa', 'admin_sekolah', 'pembimbing_pkl', 'instruktur', 'kajur', 'wali_kelas', 'kesiswaan', 'wakil_kepsek', 'kepsek'];
+    }
+
+    private function nullableToken(string $value): ?string
+    {
+        $trimmed = trim($value);
+        if ($trimmed === '' || $trimmed === '-') {
+            return null;
+        }
+
+        return $trimmed;
+    }
+
+    private function isImportRowValid(string $role, string $identifier, string $name, string $email, string $password, ?string $jurusan, ?string $kelas, ?string $tempatPkl): bool
+    {
+        if ($name === '' || $email === '' || $password === '') {
+            return false;
+        }
+
+        $emailValid = filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
+        if (! $emailValid && trim($identifier) === '') {
+            return false;
+        }
+
+        return match ($role) {
+            'siswa' => trim($identifier) !== '' && $jurusan !== null && $kelas !== null && $tempatPkl !== null,
+            'admin_sekolah', 'kesiswaan', 'kepsek', 'wakil_kepsek' => true,
+            'pembimbing_pkl' => $jurusan !== null && ($emailValid || trim($identifier) !== ''),
+            'instruktur' => $tempatPkl !== null && ($emailValid || trim($identifier) !== ''),
+            'kajur' => $jurusan !== null,
+            'wali_kelas' => $jurusan !== null && $kelas !== null,
+            default => false,
+        };
     }
 
     private function normalizeTemplateClassName(string $classOrPosition): string
@@ -1114,6 +1252,33 @@ class ImportExportController extends Controller
         return [$identityMap, $emailMap];
     }
 
+    private function isAcademicMasterValid(?string $departmentName, ?string $className): bool
+    {
+        $departmentName = trim((string) ($departmentName ?? ''));
+        $className = trim((string) ($className ?? ''));
+
+        $department = null;
+        if ($departmentName !== '') {
+            $department = Department::query()->where('name', $departmentName)->first();
+            if (! $department) {
+                return false;
+            }
+        }
+
+        if ($className !== '') {
+            $class = SchoolClass::query()->where('name', $className)->first();
+            if (! $class) {
+                return false;
+            }
+
+            if ($department && (int) ($class->department_id ?? 0) > 0) {
+                return (int) $class->department_id === (int) $department->id;
+            }
+        }
+
+        return true;
+    }
+
     private function importJobPath(string $token): string
     {
         return self::IMPORT_JOB_DIR.'/'.$token.'.json';
@@ -1165,17 +1330,18 @@ class ImportExportController extends Controller
         $doneRows = min($totalRows, $parseSkipped + $cursor);
         $percent = $totalRows > 0 ? (int) floor(($doneRows / $totalRows) * 100) : 100;
 
+        $summary = is_array($state['summary'] ?? null) ? $state['summary'] : $this->emptyRoleSummary();
+        foreach ($this->importableRoles() as $role) {
+            $summary[$role] = (int) ($summary[$role] ?? 0);
+        }
+
         return [
             'percent' => $percent,
             'done_rows' => $doneRows,
             'total_rows' => $totalRows,
             'processed' => $processed,
             'skipped' => $parseSkipped + $runtimeSkipped,
-            'summary' => [
-                'siswa' => (int) (($state['summary']['siswa'] ?? 0)),
-                'instruktur' => (int) (($state['summary']['instruktur'] ?? 0)),
-                'kepsek' => (int) (($state['summary']['kepsek'] ?? 0)),
-            ],
+            'summary' => $summary,
         ];
     }
 
@@ -1184,7 +1350,46 @@ class ImportExportController extends Controller
      */
     private function buildImportSummaryMessage(array $progress): string
     {
-        return 'Import selesai: '.$progress['processed'].' baris diproses, '.$progress['skipped'].' baris dilewati. '.
-            'Siswa: '.$progress['summary']['siswa'].', Guru: '.$progress['summary']['instruktur'].', Kepsek: '.$progress['summary']['kepsek'].'.';
+        return 'Import selesai: '.$progress['processed'].' baris diproses,'."\n".
+            $progress['skipped'].' baris dilewati.'."\n".
+            $this->formatSummary(is_array($progress['summary'] ?? null) ? $progress['summary'] : []);
+    }
+
+    private function emptyRoleSummary(): array
+    {
+        $summary = [];
+        foreach ($this->importableRoles() as $role) {
+            $summary[$role] = 0;
+        }
+
+        return $summary;
+    }
+
+    private function formatSummary(array $summary): string
+    {
+        $labels = [
+            'siswa' => 'Siswa',
+            'admin_sekolah' => 'Admin Sekolah',
+            'pembimbing_pkl' => 'Instruktur PKL',
+            'instruktur' => 'Pembimbing',
+            'kajur' => 'Kajur',
+            'wali_kelas' => 'Wali Kelas',
+            'kesiswaan' => 'Kesiswaan',
+            'kepsek' => 'Kepsek',
+            'wakil_kepsek' => 'Wakil Kepsek',
+        ];
+
+        $parts = [];
+        foreach ($labels as $role => $label) {
+            $parts[] = $label.': '.(int) ($summary[$role] ?? 0);
+        }
+
+        return implode(",\n", $parts).'.';
+    }
+
+    private function ensureImportExportAccess(Request $request): void
+    {
+        $role = (string) ($request->user()?->role ?? '');
+        abort_unless(MenuAccess::canAccess($role, 'fitur/import-export'), 403, 'Akses ditolak.');
     }
 }

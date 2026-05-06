@@ -62,7 +62,13 @@ class LoginController extends Controller
                 ]);
             }
 
-            $user = $this->findActiveUserByIdentifier($identifier);
+            $candidates = $this->findActiveUserCandidatesByIdentifier($identifier);
+            if ($candidates->count() > 1) {
+                throw ValidationException::withMessages([
+                    'identifier' => 'Identifier login bentrok di lebih dari satu akun. Hubungi admin untuk merapikan username/NIS/NUPTK.',
+                ]);
+            }
+            $user = $candidates->first();
 
             if (! $user || ! Hash::check($password, $user->password)) {
                 RateLimiter::hit($throttleKey, 60);
@@ -120,7 +126,10 @@ class LoginController extends Controller
         return redirect()->route('login');
     }
 
-    private function findActiveUserByIdentifier(string $identifier): ?User
+    /**
+     * @return \Illuminate\Database\Eloquent\Collection<int, User>
+     */
+    private function findActiveUserCandidatesByIdentifier(string $identifier): \Illuminate\Database\Eloquent\Collection
     {
         return User::query()
             ->where('is_deleted', false)
@@ -130,7 +139,14 @@ class LoginController extends Controller
                     ->orWhere('nis', $identifier)
                     ->orWhere('nuptk', $identifier);
             })
-            ->first();
+            ->orderByRaw('CASE
+                WHEN email = ? THEN 1
+                WHEN username = ? THEN 2
+                WHEN nis = ? THEN 3
+                WHEN nuptk = ? THEN 4
+                ELSE 99 END', [$identifier, $identifier, $identifier, $identifier])
+            ->orderBy('id')
+            ->get();
     }
 
     private function isGoogleOauthReady(): bool

@@ -1,23 +1,59 @@
 @extends('layouts.app', ['title' => $title])
 
 @section('content')
+    <style>
+        .audit-filter {
+            display: grid;
+            grid-template-columns: 160px 1fr 120px 120px;
+            gap: 8px;
+            align-items: end;
+        }
+        .audit-filter label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: var(--accent-text);
+        }
+        .audit-filter input,
+        .audit-filter select {
+            width: 100%;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 9px;
+            background: var(--surface);
+            color: var(--text);
+        }
+        .audit-auth-pill {
+            display: inline-block;
+            border: 1px solid var(--line);
+            padding: 2px 8px;
+            border-radius: 999px;
+            color: var(--accent-text);
+            background: var(--accent-soft);
+        }
+        @media (max-width: 900px) {
+            .audit-filter {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
     <div class="card">
         <h3 class="mt-0 text-primary">Log Activity User</h3>
-        <form method="GET" class="mb-10" style="display:grid;grid-template-columns:160px 1fr 120px 120px;gap:8px;align-items:end;">
+        <form method="GET" class="mb-10 audit-filter">
             <div>
-                <label style="display:block;font-weight:600;margin-bottom:4px;">Scope</label>
-                <select name="scope" style="width:100%;border:1px solid #fdba74;border-radius:8px;padding:9px;">
+                <label>Scope</label>
+                <select name="scope">
                     <option value="all" {{ ($filters['scope'] ?? 'all') === 'all' ? 'selected' : '' }}>Semua</option>
                     <option value="auth" {{ ($filters['scope'] ?? 'all') === 'auth' ? 'selected' : '' }}>Auth Only</option>
                 </select>
             </div>
             <div>
-                <label style="display:block;font-weight:600;margin-bottom:4px;">Cari</label>
-                <input type="text" name="q" value="{{ $filters['q'] ?? '' }}" placeholder="Cari user, action, path, ip..." style="width:100%;border:1px solid #fdba74;border-radius:8px;padding:9px;">
+                <label>Cari</label>
+                <input type="text" name="q" value="{{ $filters['q'] ?? '' }}" placeholder="Cari user, action, path, ip...">
             </div>
             <div>
-                <label style="display:block;font-weight:600;margin-bottom:4px;">Per Page</label>
-                <select name="per_page" style="width:100%;border:1px solid #fdba74;border-radius:8px;padding:9px;">
+                <label>Per Page</label>
+                <select name="per_page">
                     @foreach([20,30,50,100] as $size)
                         <option value="{{ $size }}" {{ (int)($filters['per_page'] ?? 30) === $size ? 'selected' : '' }}>{{ $size }}</option>
                     @endforeach
@@ -84,7 +120,7 @@
                             <td>
                                 {{ $displayAction }}
                                 @if($isAuthEvent)
-                                    <div><small style="display:inline-block;border:1px solid #fdba74;padding:2px 8px;border-radius:999px;color:#9a3412;">AUTH</small></div>
+                                    <div><small class="audit-auth-pill">AUTH</small></div>
                                 @endif
                             </td>
                             <td style="max-width:220px;">

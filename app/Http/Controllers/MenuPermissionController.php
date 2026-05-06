@@ -33,6 +33,7 @@ class MenuPermissionController extends Controller
         'kajur',
         'wali_kelas',
         'kesiswaan',
+        'wakil_kepsek',
         'kepsek',
     ];
 
@@ -83,6 +84,9 @@ class MenuPermissionController extends Controller
                 $isAllowed = $role === 'superadmin'
                     ? true
                     : isset($allowed[$primaryId][$role]);
+                if (in_array($menu->key, ['dashboard', 'profil'], true)) {
+                    $isAllowed = true;
+                }
                 foreach ($menuIds as $menuId) {
                     MenuPermission::query()->updateOrCreate(
                         ['menu_id' => $menuId, 'role' => $role],
@@ -148,6 +152,7 @@ class MenuPermissionController extends Controller
             in_array($key, ['fitur/laporan-grafik', 'fitur-shared/laporan-grafik', 'fitur-admin/laporan-grafik'], true) => 'fitur-shared/laporan-grafik',
             in_array($key, ['fitur/manajemen-pengguna', 'fitur-admin/manajemen-pengguna'], true) => 'fitur/manajemen-pengguna',
             in_array($key, ['fitur/setting-web', 'fitur-admin/setting-web'], true) => 'fitur/setting-web',
+            in_array($key, ['fitur/lokasi-pkl', 'fitur-admin/lokasi-pkl'], true) => 'fitur/lokasi-pkl',
             $key === 'kajur/siswa' || str_starts_with($key, 'kajur/siswa/') => 'kajur/siswa',
             default => $key,
         };
@@ -164,11 +169,13 @@ class MenuPermissionController extends Controller
             'fitur/backup-restore' => 'Backup & Restore',
             'fitur/hak-akses-menu' => 'Hak Akses Menu',
             'fitur/import-export' => 'Import & Export User',
+            'fitur/master-akademik' => 'Tambah Akademik',
             'fitur/notif-discord' => 'Notif Discord',
             'fitur-shared/laporan-grafik' => 'Laporan',
             'fitur/manajemen-pengguna' => 'Manajemen Pengguna',
-            'tab/deleted' => 'Tab Deleted (Global)',
+            'tab/deleted' => 'Tab Deleted',
             'fitur/setting-web' => 'Setting Website',
+            'fitur/lokasi-pkl' => 'Lokasi PKL',
             'kajur/siswa' => 'Monitoring Siswa',
             'absensi' => 'Absensi Harian',
             'pengajuan' => 'Pengajuan Izin/Sakit',
@@ -177,6 +184,9 @@ class MenuPermissionController extends Controller
             'validasi-laporan' => 'Validasi Laporan',
             'chatbot' => 'Chatbot Asisten',
             'riwayat-catatan' => 'Riwayat Catatan',
+            'catatan-bimbingan' => 'Catatan Bimbingan',
+            'wakil-kepsek/validasi-kehadiran' => 'Validasi Kehadiran',
+            'validasi/catatan-bimbingan' => 'Validasi Catatan Bimbingan',
             'profil' => 'Profil Saya',
             default => ucwords(str_replace(['-', '/'], [' ', ' '], $key)),
         };
@@ -187,12 +197,13 @@ class MenuPermissionController extends Controller
         return [
             'admin_sekolah' => 'Admin Sekolah',
             'siswa' => 'Siswa',
-            'pembimbing_pkl' => 'Pembimbing',
-            'instruktur' => 'Instruktur PKL',
+            'pembimbing_pkl' => 'Instruktur PKL',
+            'instruktur' => 'Pembimbing',
             'kajur' => 'Kajur',
             'wali_kelas' => 'Wali Kelas',
             'kesiswaan' => 'Kesiswaan',
             'kepsek' => 'Kepsek',
+            'wakil_kepsek' => 'Wakil Kepsek',
         ];
     }
 
@@ -227,14 +238,19 @@ class MenuPermissionController extends Controller
             ['name' => 'Rekap Mingguan', 'url' => '/summary-report/rekap', 'key' => 'summary-report/rekap'],
             ['name' => 'Analisis Mingguan', 'url' => '/summary-report/analisis', 'key' => 'summary-report/analisis'],
             ['name' => 'Manajemen Pengguna', 'url' => '/fitur/manajemen-pengguna', 'key' => 'fitur/manajemen-pengguna'],
-            ['name' => 'Tab Deleted (Global)', 'url' => '/tab/deleted', 'key' => 'tab/deleted'],
+            ['name' => 'Tab Deleted', 'url' => '/tab/deleted', 'key' => 'tab/deleted'],
             ['name' => 'Hak Akses Menu', 'url' => '/fitur/hak-akses-menu', 'key' => 'fitur/hak-akses-menu'],
             ['name' => 'Setting Website', 'url' => '/fitur/setting-web', 'key' => 'fitur/setting-web'],
+            ['name' => 'Lokasi PKL', 'url' => '/fitur/lokasi-pkl', 'key' => 'fitur/lokasi-pkl'],
             ['name' => 'Log Activity', 'url' => '/fitur/audit-log', 'key' => 'fitur/audit-log'],
             ['name' => 'Laporan', 'url' => '/fitur-shared/laporan-grafik', 'key' => 'fitur-shared/laporan-grafik'],
             ['name' => 'Backup & Restore', 'url' => '/fitur/backup-restore', 'key' => 'fitur/backup-restore'],
             ['name' => 'Import & Export User', 'url' => '/fitur/import-export', 'key' => 'fitur/import-export'],
+            ['name' => 'Tambah Akademik', 'url' => '/fitur/master-akademik', 'key' => 'fitur/master-akademik'],
             ['name' => 'Monitoring Siswa', 'url' => '/kajur/siswa', 'key' => 'kajur/siswa'],
+            ['name' => 'Catatan Bimbingan', 'url' => '/catatan-bimbingan', 'key' => 'catatan-bimbingan'],
+            ['name' => 'Validasi Kehadiran', 'url' => '/wakil-kepsek/validasi-kehadiran', 'key' => 'wakil-kepsek/validasi-kehadiran'],
+            ['name' => 'Validasi Catatan Bimbingan', 'url' => '/validasi/catatan-bimbingan', 'key' => 'validasi/catatan-bimbingan'],
         ];
 
         DB::transaction(function () use ($requiredMenus): void {
@@ -242,8 +258,6 @@ class MenuPermissionController extends Controller
                 'instruktur/siswa-bimbingan',
                 'instruktur/catatan-akademik',
                 'kajur/penempatan-pkl',
-                'fitur/lokasi-pkl',
-                'fitur-admin/lokasi-pkl',
                 'fitur/notif-discord',
                 'fitur/exception-monitoring',
                 'fitur-shared/exception-monitoring',
@@ -283,7 +297,20 @@ class MenuPermissionController extends Controller
 
     private function defaultMenuAccess(string $menuKey, string $role): bool
     {
+        if (in_array($menuKey, ['dashboard', 'profil'], true)) {
+            return true;
+        }
+
         if ($role === 'pembimbing_pkl' && in_array($menuKey, ['summary-report', 'summary-report/rekap'], true)) {
+            return true;
+        }
+        if ($role === 'pembimbing_pkl' && $menuKey === 'validasi/catatan-bimbingan') {
+            return true;
+        }
+        if ($role === 'wakil_kepsek' && $menuKey === 'wakil-kepsek/validasi-kehadiran') {
+            return true;
+        }
+        if ($role === 'siswa' && $menuKey === 'catatan-bimbingan') {
             return true;
         }
 
@@ -313,4 +340,5 @@ class MenuPermissionController extends Controller
     }
 
 }
+
 

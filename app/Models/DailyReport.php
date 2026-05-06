@@ -19,6 +19,7 @@ class DailyReport extends Model
         'assigned_task',
         'special_assignment',
         'field_issue',
+        'remember_note',
         'evidence_path',
         'review_status',
         'pembimbing_review_note',

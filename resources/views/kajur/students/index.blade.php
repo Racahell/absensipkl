@@ -8,6 +8,11 @@
             gap: 10px;
             align-items: end;
         }
+        .monitoring-grid select,
+        .monitoring-grid input[type="text"],
+        .monitoring-grid .btn {
+            height: 40px;
+        }
         .monitoring-grid > div {
             min-width: 0;
         }
@@ -18,7 +23,6 @@
             min-width: auto;
         }
         .monitoring-grid > .field-action .btn {
-            height: 44px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -140,8 +144,8 @@
             <div>
                 <label for="mentor-role-all">Role Penugasan</label>
                 <select id="mentor-role-all" name="mentor_role">
-                    <option value="pembimbing_pkl">Pembimbing</option>
-                    <option value="instruktur">Instruktur PKL</option>
+                    <option value="pembimbing_pkl">Instruktur PKL</option>
+                    <option value="instruktur">Pembimbing</option>
                 </select>
             </div>
             <div>
@@ -299,29 +303,30 @@
             const confirmOverlay = document.getElementById('confirm-overlay');
             const confirmOk = document.getElementById('confirm-ok');
             const confirmCancel = document.getElementById('confirm-cancel');
-            if (!roleSelect || !mentorSelect) return;
 
-            const options = Array.from(mentorSelect.options);
-            function syncMentorOptions() {
-                const role = roleSelect.value;
-                const mentorLabel = document.getElementById('mentor-all-label');
-                let selectedValid = false;
-                options.forEach((opt) => {
-                    const visible = (opt.dataset.role || '') === role;
-                    opt.hidden = !visible;
-                    if (visible && opt.selected) selectedValid = true;
-                });
-                if (mentorLabel) {
-                    mentorLabel.textContent = role === 'instruktur' ? 'Instruktur PKL' : 'Pembimbing';
+            if (roleSelect && mentorSelect) {
+                const options = Array.from(mentorSelect.options);
+                function syncMentorOptions() {
+                    const role = roleSelect.value;
+                    const mentorLabel = document.getElementById('mentor-all-label');
+                    let selectedValid = false;
+                    options.forEach((opt) => {
+                        const visible = (opt.dataset.role || '') === role;
+                        opt.hidden = !visible;
+                        if (visible && opt.selected) selectedValid = true;
+                    });
+                    if (mentorLabel) {
+                        mentorLabel.textContent = role === 'instruktur' ? 'Pembimbing' : 'Instruktur PKL';
+                    }
+                    if (!selectedValid) {
+                        const firstVisible = options.find((opt) => !opt.hidden);
+                        if (firstVisible) mentorSelect.value = firstVisible.value;
+                    }
                 }
-                if (!selectedValid) {
-                    const firstVisible = options.find((opt) => !opt.hidden);
-                    if (firstVisible) mentorSelect.value = firstVisible.value;
-                }
+
+                roleSelect.addEventListener('change', syncMentorOptions);
+                syncMentorOptions();
             }
-
-            roleSelect.addEventListener('change', syncMentorOptions);
-            syncMentorOptions();
 
             function applyLocalFilter() {
                 const classVal = (classFilterSelect ? classFilterSelect.value : '').trim().toLowerCase();

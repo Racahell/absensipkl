@@ -9,8 +9,11 @@ use App\Models\LeaveRequest;
 use App\Models\PklLocation;
 use App\Models\User;
 use App\Models\WeeklyValidation;
+use App\Models\StudentGuidanceNote;
+use App\Support\SettingStore;
 use App\Support\WorkflowState;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -62,6 +65,8 @@ class DashboardController extends Controller
         $departmentOptions = [];
         $classOptions = [];
         $studentDashboard = null;
+        $studentCalendar = [];
+        $studentMonthlySummary = null;
 
         if ($dashboardRole === 'siswa') {
             $studentLocation = $user?->pklLocation;
@@ -88,6 +93,124 @@ class DashboardController extends Controller
                 'latestLeaveStatus' => (string) ($latestLeave?->status ?? '-'),
                 'latestLeaveDate' => optional($latestLeave?->request_date)?->toDateString() ?? '-',
                 'latestReportStatus' => $latestReportStatus,
+            ];
+
+            $selectedMonth = (int) $request->integer('month', (int) now()->format('n'));
+            $selectedYear = (int) $request->integer('year', (int) now()->format('Y'));
+            if ($selectedMonth < 1 || $selectedMonth > 12) {
+                $selectedMonth = (int) now()->format('n');
+            }
+            if ($selectedYear < 2020 || $selectedYear > ((int) now()->format('Y') + 1)) {
+                $selectedYear = (int) now()->format('Y');
+            }
+            $start = Carbon::create($selectedYear, $selectedMonth, 1)->startOfMonth();
+            $end = $start->copy()->endOfMonth();
+
+            $attendanceRows = Attendance::query()
+                ->where('user_id', (int) $user->id)
+                ->whereBetween('attendance_date', [$start->toDateString(), $end->toDateString()])
+                ->get();
+            $attendanceMap = $attendanceRows->keyBy(fn ($row) => optional($row->attendance_date)->toDateString());
+
+            $guidanceRows = StudentGuidanceNote::query()
+                ->where('student_user_id', (int) $user->id)
+                ->whereBetween('guidance_date', [$start->toDateString(), $end->toDateString()])
+                ->orderBy('guidance_date')
+                ->get();
+            $guidanceMap = $guidanceRows->keyBy(fn ($row) => optional($row->guidance_date)->toDateString());
+            $holidayMap = $this->buildHolidayMap($selectedYear);
+
+            $totalHadir = 0;
+            $totalAlpha = 0;
+            $createdNotes = 0;
+            $approvedNotes = 0;
+            $rejectedOrPending = 0;
+            $mentorNotes = [];
+            $kajurNotes = [];
+
+            for ($cursor = $start->copy(); $cursor->lte($end); $cursor->addDay()) {
+                $dateKey = $cursor->toDateString();
+                $attendance = $attendanceMap->get($dateKey);
+                $guidance = $guidanceMap->get($dateKey);
+
+                $isWeekend = in_array((int) $cursor->dayOfWeekIso, [6, 7], true);
+                $holidayLabel = $this->resolveHolidayLabel($cursor, $holidayMap, $isWeekend);
+                $statusKey = 'no_schedule';
+                $statusLabel = 'Tidak Ada Jadwal';
+
+                if ($attendance) {
+                    $attStatus = strtolower((string) ($attendance->status ?? ''));
+                    if ($attStatus === 'hadir') {
+                        $statusKey = 'hadir';
+                        $statusLabel = 'Hadir';
+                        $totalHadir++;
+                    } elseif ($attStatus === 'alpha') {
+                        $statusKey = 'alpha';
+                        $statusLabel = 'Alpha';
+                        $totalAlpha++;
+                    } else {
+                        $statusKey = 'pending';
+                        $statusLabel = 'Menunggu Validasi';
+                    }
+                } elseif (! $isWeekend) {
+                    $statusKey = 'pending';
+                    $statusLabel = 'Menunggu Validasi';
+                }
+
+                if ($guidance && $guidance->student_submitted_at) {
+                    $createdNotes++;
+                    if ((string) $guidance->wakil_status === 'approved') {
+                        $approvedNotes++;
+                    } else {
+                        $rejectedOrPending++;
+                    }
+
+                    if (filled($guidance->mentor1_note)) {
+                        $mentorNotes[] = (string) $guidance->mentor1_note;
+                    }
+                    if (filled($guidance->mentor2_note)) {
+                        $mentorNotes[] = (string) $guidance->mentor2_note;
+                    }
+                    if (filled($guidance->kajur_note)) {
+                        $kajurNotes[] = (string) $guidance->kajur_note;
+                    }
+                }
+
+                $studentCalendar[] = [
+                    'date' => $dateKey,
+                    'day' => (int) $cursor->format('j'),
+                    'status_key' => $statusKey,
+                    'status_label' => $statusLabel,
+                    'is_holiday' => $holidayLabel !== null,
+                    'holiday_label' => $holidayLabel,
+                    'detail' => [
+                        'tanggal' => $cursor->format('d M Y'),
+                        'hari' => $cursor->locale('id')->translatedFormat('l'),
+                        'tanggal_merah' => $holidayLabel ?? '-',
+                        'status_absensi' => $statusLabel,
+                        'catatan_siswa' => (string) ($guidance->student_note ?? '-'),
+                        'catatan_pembimbing_1' => (string) ($guidance->mentor1_note ?? '-'),
+                        'catatan_pembimbing_2' => (string) ($guidance->mentor2_note ?? '-'),
+                        'catatan_kajur' => (string) ($guidance->kajur_note ?? '-'),
+                        'status_validasi_wakil' => match ((string) ($guidance->wakil_status ?? 'pending')) {
+                            'approved' => 'Disetujui',
+                            'rejected' => 'Ditolak',
+                            default => 'Pending',
+                        },
+                    ],
+                ];
+            }
+
+            $studentMonthlySummary = [
+                'month' => $selectedMonth,
+                'year' => $selectedYear,
+                'total_hadir' => $totalHadir,
+                'total_alpha' => $totalAlpha,
+                'total_catatan_dibuat' => $createdNotes,
+                'total_catatan_disetujui' => $approvedNotes,
+                'total_catatan_tolak_belum_validasi' => $rejectedOrPending,
+                'ringkasan_catatan_pembimbing' => $mentorNotes === [] ? '-' : implode(' | ', array_slice($mentorNotes, 0, 5)),
+                'ringkasan_catatan_kajur' => $kajurNotes === [] ? '-' : implode(' | ', array_slice($kajurNotes, 0, 5)),
             ];
         }
 
@@ -121,6 +244,7 @@ class DashboardController extends Controller
         $instrukturSummary = null;
         $kajurSummary = null;
         $waliSummary = null;
+        $wakilSummary = null;
         if ($dashboardRole === 'pembimbing_pkl') {
             $pembimbingSummary = $this->buildPembimbingSummary($user);
             $kpiCards = [];
@@ -135,6 +259,9 @@ class DashboardController extends Controller
                 : $this->buildKpiCards($dashboardRole, $user, $selectedDepartment, $selectedClass === '' ? null : $selectedClass);
         } elseif ($dashboardRole === 'wali_kelas') {
             $waliSummary = $this->buildWaliSummary($user);
+            $kpiCards = [];
+        } elseif ($dashboardRole === 'wakil_kepsek') {
+            $wakilSummary = $this->buildWakilSummary();
             $kpiCards = [];
         }
 
@@ -157,17 +284,107 @@ class DashboardController extends Controller
             'instrukturSummary' => $instrukturSummary,
             'kajurSummary' => $kajurSummary,
             'waliSummary' => $waliSummary,
+            'wakilSummary' => $wakilSummary,
             'selectedDepartment' => $selectedDepartment,
             'selectedClass' => $selectedClass,
             'departmentOptions' => $departmentOptions,
             'classOptions' => $classOptions,
             'studentDashboard' => $studentDashboard,
+            'studentCalendar' => $studentCalendar,
+            'studentMonthlySummary' => $studentMonthlySummary,
         ]);
     }
 
     public function legacyRedirect(): RedirectResponse
     {
         return redirect()->route('dashboard');
+    }
+
+    public function studentCalendarData(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        abort_if((string) ($user->role ?? '') !== 'siswa', 403, 'Akses ditolak.');
+
+        $selectedMonth = (int) $request->integer('month', (int) now()->format('n'));
+        $selectedYear = (int) $request->integer('year', (int) now()->format('Y'));
+        if ($selectedMonth < 1 || $selectedMonth > 12) {
+            $selectedMonth = (int) now()->format('n');
+        }
+        if ($selectedYear < 2020 || $selectedYear > ((int) now()->format('Y') + 1)) {
+            $selectedYear = (int) now()->format('Y');
+        }
+
+        $start = Carbon::create($selectedYear, $selectedMonth, 1)->startOfMonth();
+        $end = $start->copy()->endOfMonth();
+        $attendanceRows = Attendance::query()
+            ->where('user_id', (int) $user->id)
+            ->whereBetween('attendance_date', [$start->toDateString(), $end->toDateString()])
+            ->get()
+            ->keyBy(fn ($row) => optional($row->attendance_date)->toDateString());
+        $guidanceRows = StudentGuidanceNote::query()
+            ->where('student_user_id', (int) $user->id)
+            ->whereBetween('guidance_date', [$start->toDateString(), $end->toDateString()])
+            ->get()
+            ->keyBy(fn ($row) => optional($row->guidance_date)->toDateString());
+        $holidayMap = $this->buildHolidayMap($selectedYear);
+
+        $calendar = [];
+        for ($cursor = $start->copy(); $cursor->lte($end); $cursor->addDay()) {
+            $dateKey = $cursor->toDateString();
+            $attendance = $attendanceRows->get($dateKey);
+            $guidance = $guidanceRows->get($dateKey);
+            $isWeekend = in_array((int) $cursor->dayOfWeekIso, [6, 7], true);
+            $holidayLabel = $this->resolveHolidayLabel($cursor, $holidayMap, $isWeekend);
+            $statusKey = 'no_schedule';
+            $statusLabel = 'Tidak Ada Jadwal';
+            if ($attendance) {
+                $attStatus = strtolower((string) ($attendance->status ?? ''));
+                if ($attStatus === 'hadir') {
+                    $statusKey = 'hadir';
+                    $statusLabel = 'Hadir';
+                } elseif ($attStatus === 'alpha') {
+                    $statusKey = 'alpha';
+                    $statusLabel = 'Alpha';
+                } else {
+                    $statusKey = 'pending';
+                    $statusLabel = 'Menunggu Validasi';
+                }
+            } elseif (! $isWeekend) {
+                $statusKey = 'pending';
+                $statusLabel = 'Menunggu Validasi';
+            }
+
+            $calendar[] = [
+                'date' => $dateKey,
+                'day' => (int) $cursor->format('j'),
+                'status_key' => $statusKey,
+                'status_label' => $statusLabel,
+                'is_holiday' => $holidayLabel !== null,
+                'holiday_label' => $holidayLabel,
+                'detail' => [
+                    'tanggal' => $cursor->format('d M Y'),
+                    'hari' => $cursor->locale('id')->translatedFormat('l'),
+                    'tanggal_merah' => $holidayLabel ?? '-',
+                    'status_absensi' => $statusLabel,
+                    'catatan_siswa' => (string) ($guidance->student_note ?? '-'),
+                    'catatan_pembimbing_1' => (string) ($guidance->mentor1_note ?? '-'),
+                    'catatan_pembimbing_2' => (string) ($guidance->mentor2_note ?? '-'),
+                    'catatan_kajur' => (string) ($guidance->kajur_note ?? '-'),
+                    'status_validasi_wakil' => match ((string) ($guidance->wakil_status ?? 'pending')) {
+                        'approved' => 'Disetujui',
+                        'rejected' => 'Ditolak',
+                        default => 'Pending',
+                    },
+                ],
+            ];
+        }
+
+        return response()->json([
+            'ok' => true,
+            'month' => $selectedMonth,
+            'year' => $selectedYear,
+            'calendar' => $calendar,
+        ]);
     }
 
     private function normalizeDashboardRole(string $role): string
@@ -247,6 +464,49 @@ class DashboardController extends Controller
         return $stats;
     }
 
+    private function buildHolidayMap(int $year): array
+    {
+        $raw = (string) SettingStore::get('holiday_dates', '');
+        if ($raw === '') {
+            return [];
+        }
+
+        $map = [];
+        foreach (preg_split('/[\r\n,;]+/', $raw) as $row) {
+            $row = trim((string) $row);
+            if ($row === '') {
+                continue;
+            }
+
+            $parts = explode('|', $row, 2);
+            $date = trim($parts[0] ?? '');
+            $label = trim($parts[1] ?? 'Tanggal Merah');
+            if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+                continue;
+            }
+            if ((int) substr($date, 0, 4) !== $year) {
+                continue;
+            }
+            $map[$date] = $label;
+        }
+
+        return $map;
+    }
+
+    private function resolveHolidayLabel(Carbon $date, array $holidayMap, bool $isWeekend): ?string
+    {
+        $dateKey = $date->toDateString();
+        if (isset($holidayMap[$dateKey]) && $holidayMap[$dateKey] !== '') {
+            return $holidayMap[$dateKey];
+        }
+
+        if ($isWeekend) {
+            return 'Akhir Pekan';
+        }
+
+        return null;
+    }
+
     private function buildKpiCards(string $role, ?User $actor = null, ?string $departmentName = null, ?string $className = null): array
     {
         $today = now()->toDateString();
@@ -303,6 +563,16 @@ class DashboardController extends Controller
                 $dailyReportQuery->whereHas('attendance.user', fn ($query) => $query->where('pembimbing_user_id', $actor->id));
                 $exceptionQuery->whereHas('user', fn ($query) => $query->where('pembimbing_user_id', $actor->id));
                 $studentScopeQuery->where('pembimbing_user_id', $actor->id);
+            }
+        }
+
+        if ($actor && $role !== 'siswa' && $role !== 'wali_kelas') {
+            $actorClassName = trim((string) ($actor->class_name ?? ''));
+            if ($actorClassName !== '') {
+                $attendanceQuery->whereHas('user', fn ($query) => $query->where('class_name', $actorClassName));
+                $dailyReportQuery->whereHas('attendance.user', fn ($query) => $query->where('class_name', $actorClassName));
+                $exceptionQuery->whereHas('user', fn ($query) => $query->where('class_name', $actorClassName));
+                $studentScopeQuery->where('class_name', $actorClassName);
             }
         }
 
@@ -398,6 +668,25 @@ class DashboardController extends Controller
     private function buildPembimbingSummary(User $user): array
     {
         $today = now()->toDateString();
+        $guidanceToday = StudentGuidanceNote::query()
+            ->with('student:id,name,nis')
+            ->whereDate('guidance_date', $today)
+            ->where(function ($query) use ($user): void {
+                $query->where('mentor1_user_id', (int) $user->id)
+                    ->orWhere('mentor2_user_id', (int) $user->id);
+            })
+            ->get();
+
+        $guidanceApprovedCount = $guidanceToday->filter(function (StudentGuidanceNote $row) use ($user): bool {
+            $isMentor1 = (int) ($row->mentor1_user_id ?? 0) === (int) $user->id;
+            return $isMentor1 ? (string) $row->mentor1_status === 'approved' : (string) $row->mentor2_status === 'approved';
+        })->count();
+        $guidanceRejectedCount = $guidanceToday->filter(function (StudentGuidanceNote $row) use ($user): bool {
+            $isMentor1 = (int) ($row->mentor1_user_id ?? 0) === (int) $user->id;
+            return $isMentor1 ? (string) $row->mentor1_status === 'rejected' : (string) $row->mentor2_status === 'rejected';
+        })->count();
+        $guidancePendingCount = max($guidanceToday->count() - $guidanceApprovedCount - $guidanceRejectedCount, 0);
+
         $locationIds = PklLocation::query()
             ->where('pembimbing_user_id', $user->id)
             ->pluck('id');
@@ -407,10 +696,7 @@ class DashboardController extends Controller
             ->whereIn('pkl_location_id', $locationIds)
             ->count();
 
-        $pendingAbsensiCount = Attendance::query()
-            ->whereIn('pkl_location_id', $locationIds)
-            ->whereIn('status', WorkflowState::ATTENDANCE_PENDING)
-            ->count();
+        $pendingAbsensiCount = $guidancePendingCount;
 
         $pendingPengajuanCount = LeaveRequest::query()
             ->whereIn('pkl_location_id', $locationIds)
@@ -424,19 +710,9 @@ class DashboardController extends Controller
             })
             ->count();
 
-        $hadirHariIni = Attendance::query()
-            ->whereIn('pkl_location_id', $locationIds)
-            ->whereDate('attendance_date', $today)
-            ->where('status', 'hadir')
-            ->count();
+        $hadirHariIni = $guidanceApprovedCount;
 
-        $alphaHariIni = Attendance::query()
-            ->whereIn('pkl_location_id', $locationIds)
-            ->whereDate('attendance_date', $today)
-            ->where(function ($query): void {
-                $query->where('status', 'alpha')->orWhereIn('status', WorkflowState::ATTENDANCE_REJECTS);
-            })
-            ->count();
+        $alphaHariIni = $guidanceRejectedCount;
 
         $overdueCount = Attendance::query()
             ->whereIn('pkl_location_id', $locationIds)
@@ -459,13 +735,14 @@ class DashboardController extends Controller
                 })
                 ->count();
 
-        $pendingAbsensi = Attendance::query()
-            ->with('user')
-            ->whereIn('pkl_location_id', $locationIds)
-            ->whereIn('status', WorkflowState::ATTENDANCE_PENDING)
-            ->latest('attendance_date')
-            ->limit(5)
-            ->get();
+        $pendingAbsensi = $guidanceToday
+            ->filter(function (StudentGuidanceNote $row) use ($user): bool {
+                $isMentor1 = (int) ($row->mentor1_user_id ?? 0) === (int) $user->id;
+                $status = $isMentor1 ? (string) $row->mentor1_status : (string) $row->mentor2_status;
+                return $status === 'pending';
+            })
+            ->take(5)
+            ->values();
 
         $pendingPengajuan = LeaveRequest::query()
             ->with('user')
@@ -829,6 +1106,15 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
+        $guidanceToday = StudentGuidanceNote::query()
+            ->with('student:id,name,nis,department_name')
+            ->whereDate('guidance_date', $today)
+            ->whereHas('student', fn ($q) => $q->where('department_name', $departmentName))
+            ->get();
+
+        $guidanceHadirCount = $guidanceToday->filter(fn (StudentGuidanceNote $row) => (string) $row->mentor1_status === 'approved' || (string) $row->mentor2_status === 'approved')->count();
+        $guidanceAlphaCount = $guidanceToday->filter(fn (StudentGuidanceNote $row) => (string) $row->mentor1_status === 'rejected' && (string) $row->mentor2_status === 'rejected')->count();
+
         $alphaTodayRows = Attendance::query()
             ->with('user:id,name,nis')
             ->whereIn('user_id', $studentIds)
@@ -849,21 +1135,11 @@ class DashboardController extends Controller
                 ],
                 [
                     'label' => 'Hadir Hari Ini',
-                    'value' => Attendance::query()
-                        ->whereIn('user_id', $studentIds)
-                        ->whereDate('attendance_date', $today)
-                        ->where('status', 'hadir')
-                        ->count(),
+                    'value' => $guidanceHadirCount,
                 ],
                 [
                     'label' => 'Alpha Hari Ini',
-                    'value' => Attendance::query()
-                        ->whereIn('user_id', $studentIds)
-                        ->whereDate('attendance_date', $today)
-                        ->where(function ($query): void {
-                            $query->where('status', 'alpha')->orWhereIn('status', WorkflowState::ATTENDANCE_REJECTS);
-                        })
-                        ->count(),
+                    'value' => $guidanceAlphaCount,
                 ],
                 [
                     'label' => 'Validasi Mingguan Menunggu',
@@ -886,6 +1162,97 @@ class DashboardController extends Controller
             ],
             'recentWeekly' => $recentWeekly,
             'alphaTodayRows' => $alphaTodayRows,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildWakilSummary(): array
+    {
+        $today = now()->toDateString();
+
+        $baseQuery = StudentGuidanceNote::query()
+            ->where(function ($q): void {
+                $q->where('mentor1_status', 'approved')
+                    ->orWhere('mentor2_status', 'approved');
+            });
+
+        $pendingQuery = (clone $baseQuery)->where('wakil_status', 'pending');
+        $approvedToday = (clone $baseQuery)
+            ->where('wakil_status', 'approved')
+            ->whereDate('guidance_date', $today)
+            ->count();
+        $rejectedToday = (clone $baseQuery)
+            ->where('wakil_status', 'rejected')
+            ->whereDate('guidance_date', $today)
+            ->count();
+
+        $pendingRows = (clone $pendingQuery)
+            ->with('student:id,name,nis,class_name,department_name')
+            ->orderByDesc('guidance_date')
+            ->limit(10)
+            ->get();
+
+        $approvedRows = (clone $baseQuery)
+            ->with('student:id,name,nis,class_name,department_name')
+            ->where('wakil_status', 'approved')
+            ->orderByDesc('guidance_date')
+            ->limit(10)
+            ->get();
+
+        $rejectedRows = (clone $baseQuery)
+            ->with('student:id,name,nis,class_name,department_name')
+            ->where('wakil_status', 'rejected')
+            ->orderByDesc('guidance_date')
+            ->limit(10)
+            ->get();
+
+        $trendLabels = [];
+        $trendPending = [];
+        $trendApproved = [];
+        $trendRejected = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $date = now()->subDays($i)->toDateString();
+            $trendLabels[] = Carbon::parse($date)->format('d M');
+            $trendPending[] = (clone $baseQuery)->whereDate('guidance_date', $date)->where('wakil_status', 'pending')->count();
+            $trendApproved[] = (clone $baseQuery)->whereDate('guidance_date', $date)->where('wakil_status', 'approved')->count();
+            $trendRejected[] = (clone $baseQuery)->whereDate('guidance_date', $date)->where('wakil_status', 'rejected')->count();
+        }
+
+        $departmentSummary = (clone $baseQuery)
+            ->join('users as students', 'students.id', '=', 'student_guidance_notes.student_user_id')
+            ->selectRaw('students.department_name as department_name')
+            ->selectRaw("SUM(CASE WHEN student_guidance_notes.wakil_status = 'pending' THEN 1 ELSE 0 END) as pending_count")
+            ->selectRaw("SUM(CASE WHEN student_guidance_notes.wakil_status = 'approved' THEN 1 ELSE 0 END) as approved_count")
+            ->selectRaw("SUM(CASE WHEN student_guidance_notes.wakil_status = 'rejected' THEN 1 ELSE 0 END) as rejected_count")
+            ->groupBy('students.department_name')
+            ->orderByRaw('pending_count DESC')
+            ->limit(10)
+            ->get()
+            ->map(function ($row) {
+                $name = trim((string) ($row->department_name ?? ''));
+                $row->department_name = $name !== '' ? $name : '-';
+                return $row;
+            });
+
+        return [
+            'cards' => [
+                ['label' => 'Pending Validasi Kehadiran', 'value' => (clone $pendingQuery)->count()],
+                ['label' => 'Disetujui Hari Ini', 'value' => $approvedToday],
+                ['label' => 'Ditolak Hari Ini', 'value' => $rejectedToday],
+                ['label' => 'Total Menunggu (Semua Waktu)', 'value' => (clone $baseQuery)->where('wakil_status', 'pending')->count()],
+            ],
+            'pendingRows' => $pendingRows,
+            'approvedRows' => $approvedRows,
+            'rejectedRows' => $rejectedRows,
+            'trend' => [
+                'labels' => $trendLabels,
+                'pending' => $trendPending,
+                'approved' => $trendApproved,
+                'rejected' => $trendRejected,
+            ],
+            'departmentSummary' => $departmentSummary,
         ];
     }
 }

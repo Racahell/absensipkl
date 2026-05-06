@@ -42,6 +42,7 @@ class RoleMiddleware
         return match ($role) {
             'owner' => 'kepsek',
             'operator' => 'admin_sekolah',
+            'pembimbing' => 'pembimbing_pkl',
             default => $role,
         };
     }

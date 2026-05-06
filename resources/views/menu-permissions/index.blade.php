@@ -1,6 +1,43 @@
 @extends('layouts.app', ['title' => $title])
 
 @section('content')
+    <style>
+        #select-all-permissions,
+        .select-role,
+        .perm-checkbox {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border: 1px solid var(--line);
+            border-radius: 4px;
+            background: var(--surface);
+            cursor: pointer;
+            position: relative;
+            vertical-align: middle;
+        }
+
+        #select-all-permissions:checked,
+        .select-role:checked,
+        .perm-checkbox:checked {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+
+        #select-all-permissions:checked::after,
+        .select-role:checked::after,
+        .perm-checkbox:checked::after {
+            content: "";
+            position: absolute;
+            left: 4px;
+            top: 1px;
+            width: 4px;
+            height: 8px;
+            border: solid #fff;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+    </style>
     <div class="card">
         <h3 style="margin-top:0; color:#9a3412;">Hak Akses Menu (Checklist)</h3>
         @if (session('success'))
@@ -32,13 +69,13 @@
             <div style="overflow-x:auto;">
                 <table style="width:100%; border-collapse:collapse; font-size:14px;">
                     <thead>
-                        <tr style="background:#fff7ed;">
-                            <th style="padding:8px; border:1px solid #fdba74;" data-col="menu">Menu</th>
+                        <tr style="background:var(--accent-soft);">
+                            <th style="padding:8px; border:1px solid var(--line);" data-col="menu">Menu</th>
                             @foreach ($roles as $role)
-                                <th style="padding:8px; border:1px solid #fdba74;" data-role-col="{{ $role }}">
+                                <th style="padding:8px; border:1px solid var(--line);" data-role-col="{{ $role }}">
                                     <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
                                         <span>{{ $roleLabels[$role] ?? $role }}</span>
-                                        <label style="display:flex; align-items:center; gap:4px; font-size:12px; color:#9a3412; cursor:pointer;">
+                                        <label style="display:flex; align-items:center; gap:4px; font-size:12px; color:var(--accent-text); cursor:pointer;">
                                             <input type="checkbox" class="select-role" data-role="{{ $role }}">
                                             Semua
                                         </label>
@@ -50,7 +87,7 @@
                     <tbody>
                         @foreach ($menus as $menu)
                             <tr data-menu-name="{{ strtolower($menu->name) }}">
-                                <td style="padding:8px; border:1px solid #fed7aa;" data-col="menu">{{ $menu->name }}</td>
+                                <td style="padding:8px; border:1px solid var(--line);" data-col="menu">{{ $menu->name }}</td>
                                 @foreach ($roles as $role)
                                     @php
                                         $ids = $groupedMenuIds[$menu->id] ?? collect([$menu->id]);
@@ -63,7 +100,7 @@
                                             ? false
                                             : $rolePermissions->contains(fn ($value) => (bool) $value);
                                     @endphp
-                                    <td style="text-align:center; padding:8px; border:1px solid #fed7aa;" data-role-col="{{ $role }}">
+                                    <td style="text-align:center; padding:8px; border:1px solid var(--line);" data-role-col="{{ $role }}">
                                         <input
                                             type="checkbox"
                                             class="perm-checkbox"

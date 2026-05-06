@@ -30,7 +30,7 @@ class AuthSetupController extends Controller
 
         $data = $request->validate([
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
-            'phone' => ['required', 'string', 'max:30', Rule::unique('users', 'phone')->ignore($user->id)],
+            'phone' => ['required', 'string', 'max:30', 'regex:/^[0-9]+$/', Rule::unique('users', 'phone')->ignore($user->id)],
         ]);
 
         $user->update([

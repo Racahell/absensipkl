@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Attendance;
-use App\Models\DailyReport;
 use App\Models\LeaveRequest;
 use App\Models\WeeklyValidation;
 use Illuminate\Http\Request;
@@ -48,89 +47,17 @@ class ValidationNoteHistoryController extends Controller
                     ->unique()
                     ->implode(' | ');
 
-                $instrukturNote = collect([
-                    $attendance->instruktur_note,
-                    $report?->instruktur_review_note,
-                    $report?->review_note_instruktur,
-                ])->filter(fn ($value): bool => filled($value))
-                    ->map(fn ($value): string => trim((string) $value))
-                    ->unique()
-                    ->implode(' | ');
-
-                $kajurNote = collect([
-                    $attendance->kajur_note,
-                    $report?->kajur_review_note,
-                ])->filter(fn ($value): bool => filled($value))
-                    ->map(fn ($value): string => trim((string) $value))
-                    ->unique()
-                    ->implode(' | ');
-
-                [$notes, $noteCount] = $this->buildRoleNotes($pembimbingNote, $instrukturNote, $kajurNote);
+                [$notes, $noteCount] = $this->buildRoleNotes($pembimbingNote);
 
                 return [
                     'type' => 'Absensi / Laporan Harian',
                     'date' => optional($attendance->attendance_date)?->toDateString() ?? '-',
-                    'week_start' => optional($attendance->attendance_date)?->copy()?->startOfWeek(Carbon::MONDAY)?->toDateString(),
-                    'week_end' => optional($attendance->attendance_date)?->copy()?->endOfWeek(Carbon::SUNDAY)?->toDateString(),
                     'status' => $this->composeAttendanceReportStatus($attendance),
                     'notes' => $notes,
                     'notes_count' => $noteCount,
                 ];
             })
-            ->groupBy(function (array $row): string {
-                return (string) ($row['week_start'] ?? $row['date'] ?? '-');
-            })
-            ->map(function ($group): array {
-                $items = collect($group)->values();
-                $first = (array) $items->first();
-
-                $roles = ['Pembimbing Sekolah', 'Instruktur', 'Kajur'];
-                $roleNotes = [];
-                foreach ($roles as $role) {
-                    $merged = $items
-                        ->flatMap(function (array $item) use ($role) {
-                            return collect($item['notes'] ?? [])
-                                ->filter(fn (array $note): bool => (string) ($note['role'] ?? '') === $role)
-                                ->pluck('value')
-                                ->all();
-                        })
-                        ->filter(fn ($value): bool => filled($value) && (string) $value !== '-')
-                        ->map(fn ($value): string => trim((string) $value))
-                        ->unique()
-                        ->values();
-
-                    $roleNotes[] = [
-                        'role' => $role,
-                        'value' => $merged->isEmpty() ? '-' : $merged->implode(' | '),
-                    ];
-                }
-
-                $weekStart = (string) ($first['week_start'] ?? '');
-                $weekEnd = (string) ($first['week_end'] ?? '');
-                $displayDate = ($weekStart !== '' && $weekEnd !== '')
-                    ? $weekStart.' s/d '.$weekEnd
-                    : (string) ($first['date'] ?? '-');
-
-                $statusSummary = $items->pluck('status')
-                    ->filter(fn ($value): bool => filled($value))
-                    ->map(fn ($value): string => trim((string) $value))
-                    ->unique()
-                    ->values()
-                    ->take(3)
-                    ->implode(' | ');
-
-                $noteCount = collect($roleNotes)
-                    ->filter(fn (array $note): bool => (string) ($note['value'] ?? '-') !== '-')
-                    ->count();
-
-                return [
-                    'type' => 'Absensi / Laporan Harian (Mingguan)',
-                    'date' => $displayDate,
-                    'status' => $statusSummary !== '' ? $statusSummary : '-',
-                    'notes' => $roleNotes,
-                    'notes_count' => $noteCount,
-                ];
-            })
+            ->sortByDesc('date')
             ->values();
 
         $leaveNotes = LeaveRequest::query()
@@ -173,20 +100,7 @@ class ValidationNoteHistoryController extends Controller
                     }
                 }
 
-                $instrukturNote = trim((string) ($leave->instruktur_note ?? ''));
-                $kajurNote = trim((string) ($leave->kajur_note ?? ''));
-                if ($instrukturNote === '' && $weekly && filled($weekly->instruktur_note)) {
-                    $instrukturNote = trim((string) $weekly->instruktur_note);
-                }
-                if ($kajurNote === '' && $weekly && filled($weekly->kajur_note)) {
-                    $kajurNote = trim((string) $weekly->kajur_note);
-                }
-
-                [$notes, $noteCount] = $this->buildRoleNotes(
-                    $leave->pembimbing_note,
-                    $instrukturNote,
-                    $kajurNote
-                );
+                [$notes, $noteCount] = $this->buildRoleNotes($leave->pembimbing_note);
 
                 return [
                     'type' => 'Pengajuan Izin/Sakit',
@@ -254,12 +168,10 @@ class ValidationNoteHistoryController extends Controller
     /**
      * @return array{0:array<int, array{role:string,value:string}>,1:int}
      */
-    private function buildRoleNotes(?string $pembimbing, ?string $instruktur, ?string $kajur): array
+    private function buildRoleNotes(?string $pembimbing): array
     {
         $rows = [
             ['role' => 'Pembimbing Sekolah', 'value' => trim((string) $pembimbing)],
-            ['role' => 'Instruktur', 'value' => trim((string) $instruktur)],
-            ['role' => 'Kajur', 'value' => trim((string) $kajur)],
         ];
 
         $count = collect($rows)->filter(fn (array $row): bool => $row['value'] !== '')->count();

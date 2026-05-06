@@ -27,28 +27,47 @@
             justify-content: space-between;
             gap: 10px;
             flex-wrap: wrap;
-            border: 1px solid #fdba74;
+            border: 1px solid var(--line);
             border-radius: 10px;
-            background: #fff7ed;
+            background: var(--accent-soft);
             padding: 10px 12px;
             margin-bottom: 12px;
         }
 
         .attendance-location-text {
-            color: #9a3412;
+            color: var(--accent-text);
             font-weight: 600;
         }
 
         .attendance-location-link {
             display: none;
             text-decoration: none;
-            border: 1px solid #fdba74;
+            border: 1px solid var(--line);
             border-radius: 8px;
             padding: 6px 10px;
-            background: #fff;
-            color: #9a3412;
+            background: var(--surface);
+            color: var(--accent-text);
             font-size: 13px;
             font-weight: 600;
+        }
+
+        .attendance-media-frame {
+            border: 1px solid var(--line);
+            border-radius: 10px;
+        }
+
+        .attendance-camera-card {
+            width: min(460px, 100%);
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 14px;
+        }
+
+        .attendance-camera-title {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: var(--accent-text);
         }
     </style>
 
@@ -92,8 +111,6 @@
             @endphp
             <p>Status: <strong>{{ $statusLabel }}</strong></p>
             <p>Status Laporan: <strong>{{ $reportStatusLabel }}</strong></p>
-            <p>Check-in: {{ $todayAttendance->check_in_at?->timezone($timezone)?->format('H:i:s') ?? '-' }}</p>
-            <p>Check-out: {{ $todayAttendance->check_out_at?->timezone($timezone)?->format('H:i:s') ?? '-' }}</p>
         @else
             <p>Belum ada absensi untuk hari ini.</p>
         @endif
@@ -101,8 +118,6 @@
 
     <div class="card mb-16" id="checkin-card">
         <h3 class="mt-0">Check-in</h3>
-        <p class="text-primary">Waktu check-in tercatat otomatis saat tombol diklik ({{ $timezone }}).</p>
-        <p class="text-muted">Batas check-in: {{ $checkinWindow[0] }} - {{ $checkinWindow[1] }}</p>
         <form action="{{ route('absensi.checkin') }}" method="POST" enctype="multipart/form-data">
             @csrf
             <input type="hidden" id="checkin-latitude" name="latitude" required>
@@ -118,7 +133,7 @@
                     title="Peta Lokasi Check-in"
                     width="100%"
                     height="240"
-                    style="border:1px solid #fdba74;border-radius:10px;"
+                    class="attendance-media-frame"
                     loading="lazy"
                     referrerpolicy="no-referrer-when-downgrade">
                 </iframe>
@@ -129,7 +144,8 @@
                 <img
                     id="checkin-photo-preview"
                     alt="Preview Selfie Check-in"
-                    style="width:100%; max-width:360px; border:1px solid #fdba74; border-radius:10px; display:block;">
+                    style="width:100%; max-width:360px; display:block;"
+                    class="attendance-media-frame">
             </div>
             <p id="checkin-camera-info" class="text-primary" style="margin-top:8px;">Belum ada foto selfie.</p>
             <div class="attendance-action-row">
@@ -145,18 +161,20 @@
         <div
             id="checkin-camera-modal"
             style="display:none; position:fixed; inset:0; background:rgba(17, 24, 39, 0.65); z-index:9999; align-items:center; justify-content:center; padding:16px;">
-            <div style="width:min(460px, 100%); background:#fff; border:1px solid #fdba74; border-radius:12px; padding:14px;">
-                <h4 style="margin-top:0; margin-bottom:10px; color:#9a3412;">Ambil Foto Check-in</h4>
+            <div class="attendance-camera-card">
+                <h4 class="attendance-camera-title">Ambil Foto Check-in</h4>
                 <video
                     id="checkin-camera"
                     autoplay
                     playsinline
                     muted
-                    style="width:100%; border:1px solid #fdba74; border-radius:10px; background:#111;">
+                    style="width:100%; background:#111;"
+                    class="attendance-media-frame">
                 </video>
                 <canvas
                     id="checkin-canvas"
-                    style="display:none; width:100%; border:1px solid #fdba74; border-radius:10px; margin-top:10px;">
+                    style="display:none; width:100%; margin-top:10px;"
+                    class="attendance-media-frame">
                 </canvas>
                 <p id="checkin-modal-info" class="text-primary" style="margin-top:8px;">Mengaktifkan kamera...</p>
                 <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:12px;">
@@ -170,8 +188,6 @@
 
     <div class="card" id="checkout-card">
         <h3 class="mt-0">Check-out + Daily Report</h3>
-        <p class="text-primary">Waktu check-out tercatat otomatis saat tombol diklik ({{ $timezone }}).</p>
-        <p class="text-muted">Batas check-out: {{ $checkoutWindow[0] }} - {{ $checkoutWindow[1] }}</p>
         <form action="{{ route('absensi.checkout') }}" method="POST" enctype="multipart/form-data">
             @csrf
             <input type="hidden" id="checkout-latitude" name="latitude" required>
@@ -187,28 +203,29 @@
                     title="Peta Lokasi Check-out"
                     width="100%"
                     height="240"
-                    style="border:1px solid #fdba74;border-radius:10px;"
+                    class="attendance-media-frame"
                     loading="lazy"
                     referrerpolicy="no-referrer-when-downgrade">
                 </iframe>
             </div>
-            <label>Ringkasan Kegiatan Hari Ini</label>
-            <textarea name="check_out_summary" rows="3" class="mb-10" required></textarea>
             <label>Rencana Pekerjaan</label>
             <textarea name="plan_work" rows="3" class="mb-10" required></textarea>
             <label>Realisasi Pekerjaan</label>
             <textarea name="actual_work" rows="3" class="mb-10" required></textarea>
-            <label>Penugasan dari Atasan (opsional)</label>
+            <label>Penugasan Khusus dari Atasan</label>
             <textarea name="assigned_task" rows="3" class="mb-10"></textarea>
-            <label>Masalah di Lapangan (opsional)</label>
+            <label>Penemuan Masalah di Lapangan</label>
             <textarea name="field_issue" rows="3" class="mb-10"></textarea>
+            <label>Catatan untuk Diingat</label>
+            <textarea name="remember_note" rows="3" class="mb-10"></textarea>
             <label>Bukti Foto (wajib)</label>
             <p class="text-muted">Bukti foto wajib diambil langsung dari kamera perangkat.</p>
             <div id="checkout-photo-preview-wrapper" style="display:none; margin-bottom:10px;">
                 <img
                     id="checkout-photo-preview"
                     alt="Preview Bukti Foto Check-out"
-                    style="width:100%; max-width:360px; border:1px solid #fdba74; border-radius:10px; display:block;">
+                    style="width:100%; max-width:360px; display:block;"
+                    class="attendance-media-frame">
             </div>
             <p id="checkout-camera-info" class="text-primary" style="margin-top:8px;">Belum ada bukti foto.</p>
             <div class="attendance-action-row">
@@ -224,18 +241,20 @@
         <div
             id="checkout-camera-modal"
             style="display:none; position:fixed; inset:0; background:rgba(17, 24, 39, 0.65); z-index:9999; align-items:center; justify-content:center; padding:16px;">
-            <div style="width:min(460px, 100%); background:#fff; border:1px solid #fdba74; border-radius:12px; padding:14px;">
-                <h4 style="margin-top:0; margin-bottom:10px; color:#9a3412;">Ambil Bukti Foto Check-out</h4>
+            <div class="attendance-camera-card">
+                <h4 class="attendance-camera-title">Ambil Bukti Foto Check-out</h4>
                 <video
                     id="checkout-camera"
                     autoplay
                     playsinline
                     muted
-                    style="width:100%; border:1px solid #fdba74; border-radius:10px; background:#111;">
+                    style="width:100%; background:#111;"
+                    class="attendance-media-frame">
                 </video>
                 <canvas
                     id="checkout-canvas"
-                    style="display:none; width:100%; border:1px solid #fdba74; border-radius:10px; margin-top:10px;">
+                    style="display:none; width:100%; margin-top:10px;"
+                    class="attendance-media-frame">
                 </canvas>
                 <p id="checkout-modal-info" class="text-primary" style="margin-top:8px;">Mengaktifkan kamera...</p>
                 <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:12px;">

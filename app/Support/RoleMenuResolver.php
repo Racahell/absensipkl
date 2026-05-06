@@ -90,6 +90,7 @@ class RoleMenuResolver
             in_array($key, ['fitur/laporan-grafik', 'fitur-shared/laporan-grafik', 'fitur-admin/laporan-grafik'], true) => 'fitur-shared/laporan-grafik',
             in_array($key, ['fitur/manajemen-pengguna', 'fitur-admin/manajemen-pengguna'], true) => 'fitur/manajemen-pengguna',
             in_array($key, ['fitur/setting-web', 'fitur-admin/setting-web'], true) => 'fitur/setting-web',
+            in_array($key, ['fitur/lokasi-pkl', 'fitur-admin/lokasi-pkl'], true) => 'fitur/lokasi-pkl',
             default => $key,
         };
     }
@@ -106,21 +107,26 @@ class RoleMenuResolver
             'absensi' => 'Absensi Harian',
             'pengajuan' => 'Pengajuan Izin/Sakit',
             'riwayat-catatan' => 'Riwayat Catatan',
+            'catatan-bimbingan' => 'Catatan Bimbingan',
             'validasi' => 'Validasi Absensi',
+            'validasi/catatan-bimbingan' => 'Validasi Catatan Bimbingan',
             'validasi-pengajuan' => 'Validasi Pengajuan',
             'validasi-laporan' => 'Validasi Laporan',
+            'wakil-kepsek/validasi-kehadiran' => 'Validasi Kehadiran',
             'chatbot' => 'Chatbot Asisten',
             'summary-report' => 'Validasi Mingguan',
             'summary-report/rekap' => 'Rekap Mingguan',
             'summary-report/analisis' => 'Analisis Mingguan',
             'fitur/manajemen-pengguna' => 'Manajemen Pengguna',
+            'tab/deleted' => 'Tab Deleted',
             'fitur/hak-akses-menu' => 'Hak Akses Menu',
             'fitur/setting-web' => 'Setting Website',
+            'fitur/lokasi-pkl' => 'Lokasi PKL',
             'fitur/audit-log' => 'Log Activity',
             'fitur/backup-restore' => 'Backup & Restore',
             'fitur/import-export' => 'Import & Export User',
+            'fitur/master-akademik' => 'Tambah Akademik',
             'fitur-shared/laporan-grafik' => 'Laporan',
-            'tab/deleted' => 'Tab Deleted (Global)',
         ];
 
         return $map[$key] ?? $fallback;
@@ -137,7 +143,9 @@ class RoleMenuResolver
             'fitur-shared/lupa-password',
             'fitur/verifikasi-email',
             'fitur/captcha-setting',
+            'tab/deleted',
             'export/rekap.csv',
         ];
     }
 }
+

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\SystemBackup;
+use App\Support\MenuAccess;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
@@ -14,8 +15,25 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class SystemBackupController extends Controller
 {
+    /**
+     * Tabel inti akses sistem yang tidak boleh ikut dihapus massal.
+     *
+     * @return array<int, string>
+     */
+    private function protectedWipeTables(): array
+    {
+        return ['users', 'roles', 'menus', 'menu_permissions', 'app_settings'];
+    }
+
+    private function ensureBackupAccess(Request $request): void
+    {
+        $role = (string) ($request->user()?->role ?? '');
+        abort_unless(MenuAccess::canAccess($role, 'fitur/backup-restore'), 403, 'Akses ditolak.');
+    }
+
     public function index(): View
     {
+        $this->ensureBackupAccess(request());
         $tab = request()->string('tab', 'backup')->toString();
         if (! in_array($tab, ['backup', 'restore', 'delete'], true)) {
             $tab = 'backup';
@@ -31,6 +49,7 @@ class SystemBackupController extends Controller
 
     public function backup(Request $request): RedirectResponse
     {
+        $this->ensureBackupAccess($request);
         $allowedTables = $this->listTables();
         $data = $request->validate([
             'scope' => ['required', 'in:single,all'],
@@ -41,6 +60,9 @@ class SystemBackupController extends Controller
 
         if ($scope === 'single' && ! in_array($tableName, $allowedTables, true)) {
             return back()->with('error', 'Tabel yang dipilih tidak valid.');
+        }
+        if ($scope === 'single' && in_array($tableName, $this->protectedWipeTables(), true)) {
+            return back()->with('error', 'Tabel inti sistem tidak boleh dihapus dari menu ini.');
         }
 
         $targetTables = $scope === 'all' ? $allowedTables : [$tableName];
@@ -62,6 +84,7 @@ class SystemBackupController extends Controller
 
     public function restore(Request $request, SystemBackup $backup): RedirectResponse
     {
+        $this->ensureBackupAccess($request);
         if (! Storage::disk('local')->exists($backup->file_path)) {
             return back()->with('error', 'File backup tidak ditemukan.');
         }
@@ -83,6 +106,7 @@ class SystemBackupController extends Controller
 
     public function restoreUpload(Request $request): RedirectResponse
     {
+        $this->ensureBackupAccess($request);
         $allowedTables = $this->listTables();
         $data = $request->validate([
             'scope' => ['required', 'in:single,all'],
@@ -120,12 +144,14 @@ class SystemBackupController extends Controller
 
     public function download(SystemBackup $backup): StreamedResponse
     {
+        $this->ensureBackupAccess(request());
         abort_unless(Storage::disk('local')->exists($backup->file_path), 404);
         return Storage::disk('local')->download($backup->file_path, $backup->name);
     }
 
     public function wipe(Request $request): RedirectResponse
     {
+        $this->ensureBackupAccess($request);
         $allowedTables = $this->listTables();
         $data = $request->validate([
             'scope' => ['required', 'in:single,all'],
@@ -156,8 +182,7 @@ class SystemBackupController extends Controller
         DB::statement('SET FOREIGN_KEY_CHECKS=0');
         if ($scope === 'all') {
             foreach ($allowedTables as $table) {
-                if ($table === 'users') {
-                    $this->truncateUsersPreservingCurrentUser($currentUserId);
+                if (in_array($table, $this->protectedWipeTables(), true)) {
                     continue;
                 }
 
@@ -167,13 +192,9 @@ class SystemBackupController extends Controller
                 }
             }
         } else {
-            if ($tableName === 'users') {
-                $this->truncateUsersPreservingCurrentUser($currentUserId);
-            } else {
-                $columns = $this->tableColumns($tableName);
-                if ($columns !== []) {
-                    DB::table($tableName)->truncate();
-                }
+            $columns = $this->tableColumns($tableName);
+            if ($columns !== []) {
+                DB::table($tableName)->truncate();
             }
         }
         DB::statement('SET FOREIGN_KEY_CHECKS=1');

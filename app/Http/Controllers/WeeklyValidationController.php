@@ -8,6 +8,7 @@ use App\Models\AttendanceException;
 use App\Models\LeaveRequest;
 use App\Models\PklLocation;
 use App\Models\User;
+use App\Models\StudentGuidanceNote;
 use App\Models\WeeklyValidation;
 use App\Support\ValidationLogger;
 use App\Support\WorkflowState;
@@ -23,7 +24,7 @@ class WeeklyValidationController extends Controller
     public function index(Request $request): View
     {
         $data = $this->buildWeeklyPageData($request);
-        $data['title'] = 'Validasi Mingguan Kajur';
+        $data['title'] = 'Validasi Mingguan';
 
         return view('reports.weekly', $data);
     }
@@ -50,14 +51,19 @@ class WeeklyValidationController extends Controller
     private function buildWeeklyPageData(Request $request): array
     {
         $user = $request->user();
-        $role = (string) ($user->role ?? '');
+        $role = $this->normalizeRole((string) ($user->role ?? ''));
 
-        $weekStart = $this->resolveWeekStart((string) $request->string('week_start')->toString());
+        $weekStartInput = (string) $request->string('week_start')->toString();
+        $selectedDate = $weekStartInput !== ''
+            ? Carbon::parse($weekStartInput)->toDateString()
+            : now(config('app.timezone', 'Asia/Jakarta'))->toDateString();
+        $weekStart = $this->resolveWeekStart($weekStartInput);
         $weekEnd = $weekStart->copy()->addDays(6);
         $selectedDepartment = trim((string) $request->string('jurusan')->toString());
         $selectedClass = trim((string) $request->string('kelas')->toString());
         $selectedStudent = trim((string) $request->string('siswa')->toString());
         $requireDepartmentSelection = ! in_array($role, ['kajur', 'wali_kelas', 'instruktur', 'pembimbing_pkl'], true);
+        $actorClassName = trim((string) ($user->class_name ?? ''));
 
         $departmentOptions = $this->availableDepartments();
         $classOptions = [];
@@ -69,7 +75,15 @@ class WeeklyValidationController extends Controller
                 $selectedStudent = '';
             }
             $selectedDepartment = '';
-            $selectedClass = '';
+            if ($actorClassName !== '') {
+                $selectedClass = $actorClassName;
+                $studentOptions = collect($studentOptions)
+                    ->filter(fn (array $student): bool => (string) ($student['class_name'] ?? '') === $actorClassName)
+                    ->values()
+                    ->all();
+            } else {
+                $selectedClass = '';
+            }
         }
 
         if ($role === 'kajur') {
@@ -78,11 +92,27 @@ class WeeklyValidationController extends Controller
         }
         if ($role === 'instruktur') {
             $selectedDepartment = trim((string) ($user->department_name ?? ''));
-            $selectedClass = '';
+            if ($actorClassName !== '') {
+                $selectedClass = $actorClassName;
+            } else {
+                $selectedClass = '';
+            }
         }
         if ($role === 'wali_kelas') {
             $selectedClass = trim((string) ($user->class_name ?? ''));
             if ($selectedClass !== '') {
+                $classOwner = User::query()
+                    ->where('role', 'siswa')
+                    ->where('class_name', $selectedClass)
+                    ->value('department_name');
+                if ($classOwner) {
+                    $selectedDepartment = (string) $classOwner;
+                }
+            }
+        }
+        if ($role !== 'siswa' && $role !== 'wali_kelas' && $actorClassName !== '') {
+            $selectedClass = $actorClassName;
+            if ($selectedDepartment === '') {
                 $classOwner = User::query()
                     ->where('role', 'siswa')
                     ->where('class_name', $selectedClass)
@@ -174,10 +204,74 @@ class WeeklyValidationController extends Controller
             ->paginate($historyPerPage, ['*'], 'history_page')
             ->appends($request->query());
 
+        $guidanceRows = collect();
+        if (in_array($role, ['pembimbing_pkl', 'instruktur', 'kajur'], true)) {
+            $guidanceQuery = StudentGuidanceNote::query()
+                ->with([
+                    'student:id,name,nis,class_name,department_name',
+                    'mentor1:id,name',
+                    'mentor2:id,name',
+                ])
+                ->whereDate('guidance_date', $selectedDate)
+                ->orderBy('guidance_date')
+                ->orderBy('id');
+
+            if ($role === 'pembimbing_pkl') {
+                $guidanceQuery->where(function ($query) use ($user): void {
+                    $query->where('mentor1_user_id', (int) $user->id)
+                        ->orWhere('mentor2_user_id', (int) $user->id)
+                        ->orWhereExists(function ($sub) use ($user): void {
+                            $sub->select(DB::raw(1))
+                                ->from('student_mentor_assignments')
+                                ->whereColumn('student_mentor_assignments.student_user_id', 'student_guidance_notes.student_user_id')
+                                ->where('student_mentor_assignments.mentor_user_id', (int) $user->id)
+                                ->whereIn('student_mentor_assignments.mentor_role', ['pembimbing_pkl', 'instruktur']);
+                        })
+                        ->orWhereHas('student', fn ($student) => $student->where('pembimbing_user_id', (int) $user->id));
+                });
+            } elseif ($role === 'instruktur') {
+                $guidanceQuery->where(function ($query) use ($user): void {
+                    $query->where('mentor1_user_id', (int) $user->id)
+                        ->orWhere('mentor2_user_id', (int) $user->id)
+                        ->orWhereExists(function ($sub) use ($user): void {
+                            $sub->select(DB::raw(1))
+                                ->from('student_mentor_assignments')
+                                ->whereColumn('student_mentor_assignments.student_user_id', 'student_guidance_notes.student_user_id')
+                                ->where('student_mentor_assignments.mentor_user_id', (int) $user->id)
+                                ->whereIn('student_mentor_assignments.mentor_role', ['instruktur', 'pembimbing_pkl']);
+                        });
+
+                    // Fallback: instruktur baru tanpa assignment eksplisit tetap bisa melihat
+                    // catatan siswa dalam scope jurusan/kelas akunnya.
+                    $departmentName = trim((string) ($user->department_name ?? ''));
+                    $className = trim((string) ($user->class_name ?? ''));
+                    if ($departmentName !== '' || $className !== '') {
+                        $query->orWhereHas('student', function ($student) use ($departmentName, $className): void {
+                            if ($departmentName !== '') {
+                                $student->where('department_name', $departmentName);
+                            }
+                            if ($className !== '') {
+                                $student->where('class_name', $className);
+                            }
+                        });
+                    }
+                });
+            } else {
+                $guidanceQuery->whereHas('student', function ($query) use ($selectedDepartment): void {
+                    if ($selectedDepartment !== '') {
+                        $query->where('department_name', $selectedDepartment);
+                    }
+                });
+            }
+
+            $guidanceRows = $guidanceQuery->get();
+        }
+
         return [
             'role' => $role,
             'weekStart' => $weekStart,
             'weekEnd' => $weekEnd,
+            'selectedDate' => $selectedDate,
             'selectedDepartment' => $selectedDepartment,
             'selectedClass' => $selectedClass,
             'selectedStudent' => $selectedStudent,
@@ -195,7 +289,18 @@ class WeeklyValidationController extends Controller
             'validationHistory' => $validationHistory,
             'historyPerPage' => $historyPerPage,
             'historyPerPageOptions' => $historyPerPageOptions,
+            'guidanceRows' => $guidanceRows,
         ];
+    }
+
+    private function normalizeRole(string $role): string
+    {
+        $raw = strtolower(trim($role));
+        return match ($raw) {
+            'pembimbing', 'pembimbing sekolah', 'pembimbing_sekolah' => 'pembimbing_pkl',
+            'wakasek', 'wakil kepala sekolah', 'wakil_kepala_sekolah' => 'wakil_kepsek',
+            default => $raw,
+        };
     }
 
     public function approve(Request $request): RedirectResponse

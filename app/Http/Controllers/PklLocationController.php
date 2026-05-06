@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\PklLocation;
+use App\Support\MenuAccess;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -14,11 +15,12 @@ class PklLocationController extends Controller
     {
         $googleMapsEnabled = filter_var(env('GOOGLE_MAPS_ENABLED', false), FILTER_VALIDATE_BOOL);
         $isSuperadmin = (string) ($request->user()?->role ?? '') === 'superadmin';
+        $hasDeletedTabAccess = $this->canAccessDeletedTab($request);
         $tab = $request->string('tab', 'active')->toString();
         if (! in_array($tab, ['active', 'deleted'], true)) {
             $tab = 'active';
         }
-        if ($tab === 'deleted' && ! $isSuperadmin) {
+        if ($tab === 'deleted' && ! $hasDeletedTabAccess) {
             $tab = 'active';
         }
 
@@ -35,6 +37,7 @@ class PklLocationController extends Controller
         return view('locations.index', [
             'title' => 'Lokasi PKL',
             'isSuperadmin' => $isSuperadmin,
+            'hasDeletedTabAccess' => $hasDeletedTabAccess,
             'tab' => $tab,
             'activeCount' => PklLocation::query()->withoutTrashed()->count(),
             'deletedCount' => PklLocation::onlyTrashed()->count(),
@@ -132,8 +135,8 @@ class PklLocationController extends Controller
             return back()->with('error', 'Tidak ada lokasi yang dipilih.');
         }
 
-        if (in_array($action, ['restore', 'force_delete'], true) && (string) ($request->user()?->role ?? '') !== 'superadmin') {
-            return back()->with('error', 'Hanya superadmin yang boleh restore/hapus permanen lokasi.');
+        if (in_array($action, ['restore', 'force_delete'], true) && ! $this->canAccessDeletedTab($request)) {
+            return back()->with('error', 'Anda tidak punya akses ke tab Deleted.');
         }
 
         $locations = PklLocation::withTrashed()->whereIn('id', $selectedIds)->get();
@@ -184,5 +187,11 @@ class PklLocationController extends Controller
         };
 
         return back()->with('success', "{$label} massal lokasi selesai: {$processed} berhasil, {$skipped} dilewati.");
+    }
+
+    private function canAccessDeletedTab(Request $request): bool
+    {
+        $role = (string) ($request->user()?->role ?? '');
+        return MenuAccess::canAccess($role, 'tab/deleted');
     }
 }

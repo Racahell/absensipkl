@@ -71,9 +71,12 @@ class ReportExportController extends Controller
     {
         $period = $this->normalizePeriod($request->string('period', 'monthly')->toString());
         $weekStart = $this->resolveWeekStart($request);
+        [$dateFrom, $dateTo] = $this->resolveDateRange($request);
         [$waliClassName, $departmentName, $className, $studentId] = $this->resolveRoleFilters($request);
-        $rows = $this->buildRows($period, $weekStart, $waliClassName, $departmentName, $className, $studentId);
-        $periodLabel = $this->periodLabel($period);
+        $rows = $this->buildRows($period, $weekStart, $waliClassName, $departmentName, $className, $studentId, $dateFrom, $dateTo);
+        $periodLabel = ($dateFrom && $dateTo)
+            ? 'Rentang '.$dateFrom->toDateString().' s/d '.$dateTo->toDateString()
+            : $this->periodLabel($period);
         $filename = 'laporan-kehadiran-'.now()->format('Ymd-His').'.xls';
 
         $html = view('reports.export-table', [
@@ -93,13 +96,16 @@ class ReportExportController extends Controller
     {
         $period = $this->normalizePeriod($request->string('period', 'monthly')->toString());
         $weekStart = $this->resolveWeekStart($request);
+        [$dateFrom, $dateTo] = $this->resolveDateRange($request);
         [$waliClassName, $departmentName, $className, $studentId] = $this->resolveRoleFilters($request);
-        $rows = $this->buildRows($period, $weekStart, $waliClassName, $departmentName, $className, $studentId);
+        $rows = $this->buildRows($period, $weekStart, $waliClassName, $departmentName, $className, $studentId, $dateFrom, $dateTo);
         $filename = 'laporan-kehadiran-'.now()->format('Ymd-His').'.pdf';
 
         $pdf = Pdf::loadView('reports.pdf-formal', [
             'rows' => $rows,
-            'periodLabel' => $this->periodLabel($period),
+            'periodLabel' => ($dateFrom && $dateTo)
+                ? 'Rentang '.$dateFrom->toDateString().' s/d '.$dateTo->toDateString()
+                : $this->periodLabel($period),
             'generatedAt' => now()->format('Y-m-d H:i:s'),
             'mode' => 'pdf',
         ])->setPaper('a4', 'portrait');
@@ -111,12 +117,15 @@ class ReportExportController extends Controller
     {
         $period = $this->normalizePeriod($request->string('period', 'monthly')->toString());
         $weekStart = $this->resolveWeekStart($request);
+        [$dateFrom, $dateTo] = $this->resolveDateRange($request);
         [$waliClassName, $departmentName, $className, $studentId] = $this->resolveRoleFilters($request);
-        $rows = $this->buildRows($period, $weekStart, $waliClassName, $departmentName, $className, $studentId);
+        $rows = $this->buildRows($period, $weekStart, $waliClassName, $departmentName, $className, $studentId, $dateFrom, $dateTo);
 
         return response()->view('reports.pdf-formal', [
             'rows' => $rows,
-            'periodLabel' => $this->periodLabel($period),
+            'periodLabel' => ($dateFrom && $dateTo)
+                ? 'Rentang '.$dateFrom->toDateString().' s/d '.$dateTo->toDateString()
+                : $this->periodLabel($period),
             'generatedAt' => now()->format('Y-m-d H:i:s'),
             'mode' => 'print',
         ]);
@@ -150,6 +159,7 @@ class ReportExportController extends Controller
         $departmentName = null;
         $className = null;
         $studentId = null;
+        $actorClassName = trim((string) ($user->class_name ?? ''));
 
         if ($user->role === 'wali_kelas') {
             $waliClassName = trim((string) ($user->class_name ?? ''));
@@ -182,6 +192,38 @@ class ReportExportController extends Controller
             }
         }
 
+        if (in_array((string) $user->role, ['superadmin', 'admin_sekolah'], true)) {
+            $requested = trim((string) $request->string('jurusan')->toString());
+            $allowed = User::query()
+                ->where('role', 'siswa')
+                ->whereNotNull('department_name')
+                ->where('department_name', '!=', '')
+                ->distinct()
+                ->pluck('department_name')
+                ->all();
+
+            if ($requested !== '' && in_array($requested, $allowed, true)) {
+                $departmentName = $requested;
+            } else {
+                $departmentName = null;
+            }
+
+            $requestedClass = trim((string) $request->string('kelas')->toString());
+            if ($departmentName !== null && $requestedClass !== '') {
+                $classAllowed = User::query()
+                    ->where('role', 'siswa')
+                    ->where('department_name', $departmentName)
+                    ->whereNotNull('class_name')
+                    ->where('class_name', '!=', '')
+                    ->distinct()
+                    ->pluck('class_name')
+                    ->all();
+                $className = in_array($requestedClass, $classAllowed, true) ? $requestedClass : null;
+            } elseif ($requestedClass !== '') {
+                $className = null;
+            }
+        }
+
         if (in_array((string) $user->role, ['kajur', 'instruktur'], true)) {
             $departmentName = trim((string) ($user->department_name ?? ''));
             if ($departmentName === '') {
@@ -199,6 +241,10 @@ class ReportExportController extends Controller
                     ->all();
                 $className = in_array($requestedClass, $classAllowed, true) ? $requestedClass : null;
             }
+        }
+
+        if ($user->role !== 'siswa' && $user->role !== 'wali_kelas' && $actorClassName !== '') {
+            $className = $actorClassName;
         }
 
         $requestedStudentId = (int) $request->integer('siswa');
@@ -232,10 +278,20 @@ class ReportExportController extends Controller
         return Carbon::parse($value)->startOfWeek(Carbon::MONDAY);
     }
 
-    private function buildLabels(string $period, ?Carbon $weekStart = null): array
+    private function buildLabels(string $period, ?Carbon $weekStart = null, ?Carbon $dateFrom = null, ?Carbon $dateTo = null): array
     {
         $labels = [];
         $now = Carbon::now();
+
+        if ($dateFrom !== null && $dateTo !== null && $dateFrom->lte($dateTo)) {
+            $cursor = $dateFrom->copy();
+            while ($cursor->lte($dateTo)) {
+                $labels[$cursor->format('Y-m-d')] = ['start' => $cursor->toDateString(), 'end' => $cursor->toDateString()];
+                $cursor->addDay();
+            }
+
+            return $labels;
+        }
 
         if ($period === 'weekly') {
             $baseWeekStart = ($weekStart ?? $now)->copy()->startOfWeek(Carbon::MONDAY);
@@ -273,9 +329,11 @@ class ReportExportController extends Controller
         ?string $waliClassName = null,
         ?string $departmentName = null,
         ?string $className = null,
-        ?int $studentId = null
+        ?int $studentId = null,
+        ?Carbon $dateFrom = null,
+        ?Carbon $dateTo = null
     ): array {
-        $labels = $this->buildLabels($period, $weekStart);
+        $labels = $this->buildLabels($period, $weekStart, $dateFrom, $dateTo);
         $rows = [];
 
         foreach ($labels as $label => $range) {
@@ -333,5 +391,28 @@ class ReportExportController extends Controller
         }
 
         return $rows;
+    }
+
+    /**
+     * @return array{0:?Carbon,1:?Carbon}
+     */
+    private function resolveDateRange(Request $request): array
+    {
+        $dateFromRaw = trim((string) $request->string('date_from')->toString());
+        $dateToRaw = trim((string) $request->string('date_to')->toString());
+        if ($dateFromRaw === '' || $dateToRaw === '') {
+            return [null, null];
+        }
+
+        try {
+            $from = Carbon::parse($dateFromRaw)->startOfDay();
+            $to = Carbon::parse($dateToRaw)->startOfDay();
+            if ($from->gt($to)) {
+                return [$to, $from];
+            }
+            return [$from, $to];
+        } catch (\Throwable) {
+            return [null, null];
+        }
     }
 }

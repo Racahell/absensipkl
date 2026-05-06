@@ -13,13 +13,18 @@
     <link rel="apple-touch-icon" href="{{ asset($faviconPath) }}">
     <style>
         :root {
-            --bg: #fffaf5;
-            --card: #ffffff;
-            --line: #fdba74;
-            --accent: #ea580c;
-            --accent-soft: #ffedd5;
+            --bg: {{ $appProfile['theme_background'] ?? '#fffaf5' }};
+            --card: {{ $appProfile['theme_card'] ?? '#ffffff' }};
+            --accent: {{ $appProfile['theme_primary'] ?? '#ea580c' }};
+            --line: color-mix(in srgb, var(--accent) 40%, white);
+            --accent-soft: color-mix(in srgb, var(--accent) 12%, white);
             --text: #111827;
+            --accent-text: color-mix(in srgb, var(--accent) 78%, #111827);
+            --surface: #ffffff;
+            --surface-soft: color-mix(in srgb, var(--accent) 8%, white);
             --muted: #78716c;
+            --sidebar-bg: {{ $appProfile['theme_sidebar'] ?? '#ffffff' }};
+            --button-bg: {{ $appProfile['theme_button'] ?? ($appProfile['theme_primary'] ?? '#ea580c') }};
         }
 
         * { box-sizing: border-box; }
@@ -27,7 +32,7 @@
             margin: 0;
             font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
             color: var(--text);
-            background: linear-gradient(160deg, #ffffff 0%, #fffaf5 45%, #fff7ed 100%);
+            background: linear-gradient(160deg, var(--surface) 0%, var(--bg) 45%, var(--accent-soft) 100%);
         }
 
         .shell {
@@ -38,7 +43,7 @@
 
         .sidebar {
             border-right: 1px solid var(--line);
-            background: #ffffff;
+            background: var(--sidebar-bg);
             padding: 8px 16px 20px;
             display: flex;
             flex-direction: column;
@@ -70,7 +75,7 @@
             width: 200px;
             margin: -2px auto 8px;
             padding: 0;
-            color: #9a3412;
+            color: var(--accent-text);
             font-size: 16px;
             line-height: 1.2;
             font-weight: 700;
@@ -80,7 +85,7 @@
             display: block;
             font-size: 19px;
             line-height: 1.12;
-            color: #7c2d12;
+            color: var(--accent-text);
         }
 
         .menu a {
@@ -99,9 +104,9 @@
         .menu a:hover,
         .menu a.active {
             background: var(--accent-soft);
-            border-color: #fdba74;
-            border-left-color: #ea580c;
-            color: #9a3412;
+            border-color: var(--line);
+            border-left-color: var(--accent);
+            color: var(--accent-text);
         }
 
         .menu {
@@ -118,16 +123,60 @@
         }
 
         .menu-section {
-            margin-bottom: 14px;
+            margin-bottom: 10px;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            background: var(--accent-soft);
+            overflow: hidden;
         }
 
-        .menu-title {
-            font-size: 11px;
+        .menu-section-toggle {
+            width: 100%;
+            border: 0;
+            background: transparent;
+            padding: 10px 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            color: var(--accent-text);
+            font-size: 12px;
             font-weight: 700;
-            letter-spacing: .06em;
+            letter-spacing: .04em;
             text-transform: uppercase;
-            color: #a8a29e;
-            padding: 6px 10px;
+        }
+
+        .menu-section-toggle:hover {
+            background: #fff1e6;
+        }
+
+        .menu-section-caret {
+            font-size: 11px;
+            color: #c2410c;
+            transition: transform .15s ease;
+        }
+
+        .menu-section.open .menu-section-caret {
+            transform: rotate(180deg);
+        }
+
+        .menu-section-items {
+            display: none;
+            padding: 8px;
+            border-top: 1px solid var(--line);
+            background: var(--surface);
+        }
+
+        .menu-section.open .menu-section-items {
+            display: block;
+        }
+
+        .menu-section-items a {
+            margin-bottom: 8px;
+        }
+
+        .menu-section-items a:last-child {
+            margin-bottom: 0;
         }
 
         .main {
@@ -171,13 +220,13 @@
             width: 44px;
             height: 44px;
             border-radius: 999px;
-            border: 2px solid #fdba74;
-            background: #fff7ed;
+            border: 2px solid var(--line);
+            background: var(--accent-soft);
             overflow: hidden;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            color: #9a3412;
+            color: var(--accent-text);
             font-size: 16px;
             font-weight: 700;
             flex: 0 0 44px;
@@ -198,13 +247,13 @@
             font-size: 18px;
             line-height: 1.2;
             font-weight: 700;
-            color: #9a3412;
+            color: var(--accent-text);
             letter-spacing: 0.2px;
         }
 
         .topbar-greeting strong {
             font-weight: 800;
-            color: #7c2d12;
+            color: var(--accent-text);
         }
 
         .topbar small {
@@ -239,8 +288,8 @@
             display: flex;
             flex-wrap: wrap;
             border-radius: 10px;
-            background: #fff7ed;
-            border: 1px solid #fdba74;
+            background: var(--accent-soft);
+            border: 1px solid var(--line);
             box-sizing: border-box;
             padding: 3px;
             width: 132px;
@@ -265,22 +314,22 @@
             border-radius: 8px;
             border: none;
             padding: 0.45rem 0;
-            color: #9a3412;
+            color: var(--accent-text);
             font-weight: 700;
             transition: background-color 0.5s ease, font-weight 0.5s ease, color 0.5s ease;
             letter-spacing: .04em;
         }
 
         .radio-inputs .radio input:checked + .radio-item {
-            background-color: #ea580c;
+            background-color: var(--accent);
             font-weight: 600;
             color: #fff;
         }
 
         .ui-toggle-btn {
-            border: 1px solid #fdba74;
-            background: #fff7ed;
-            color: #9a3412;
+            border: 1px solid var(--line);
+            background: var(--accent-soft);
+            color: var(--accent-text);
             padding: 8px 10px;
             border-radius: 10px;
             cursor: pointer;
@@ -343,8 +392,8 @@
         }
 
         .logout-btn {
-            border: 1px solid #ea580c;
-            background: #ea580c;
+            border: 1px solid var(--button-bg);
+            background: var(--button-bg);
             color: #fff;
             padding: 8px 12px;
             border-radius: 10px;
@@ -363,7 +412,7 @@
 
         .footer {
             border-top: 1px solid var(--line);
-            background: #fff;
+            background: var(--surface);
             padding: 12px 22px;
             display: flex;
             justify-content: space-between;
@@ -371,13 +420,13 @@
             gap: 10px;
             flex-wrap: wrap;
             font-size: 13px;
-            color: #7c2d12;
+            color: var(--accent-text);
         }
 
         .footer a {
-            color: #9a3412;
+            color: var(--accent-text);
             text-decoration: none;
-            border-bottom: 1px dashed #fdba74;
+            border-bottom: 1px dashed var(--line);
         }
 
         .footer-links {
@@ -397,7 +446,7 @@
         label {
             font-size: 13px;
             font-weight: 600;
-            color: #9a3412;
+            color: var(--accent-text);
             margin-bottom: 4px;
             display: inline-block;
         }
@@ -413,7 +462,7 @@
         textarea,
         input:not([type]) {
             width: 100%;
-            border: 1px solid #fdba74;
+            border: 1px solid var(--line);
             border-radius: 10px;
             padding: 10px 12px;
             color: #1f2937;
@@ -434,8 +483,8 @@
             -moz-appearance: none;
             padding-right: 38px;
             background-image:
-                linear-gradient(45deg, transparent 50%, #ea580c 50%),
-                linear-gradient(135deg, #ea580c 50%, transparent 50%);
+                linear-gradient(45deg, transparent 50%, var(--accent) 50%),
+                linear-gradient(135deg, var(--accent) 50%, transparent 50%);
             background-position:
                 calc(100% - 18px) calc(50% - 3px),
                 calc(100% - 12px) calc(50% - 3px);
@@ -446,9 +495,9 @@
         input:focus,
         select:focus,
         textarea:focus {
-            border-color: #ea580c;
-            box-shadow: 0 0 0 3px #ffedd5;
-            background: #fffaf5;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-soft);
+            background: var(--accent-soft);
         }
 
         input::placeholder,
@@ -458,7 +507,7 @@
 
         input[type="checkbox"],
         input[type="radio"] {
-            accent-color: #ea580c;
+            accent-color: var(--accent);
             width: 16px;
             height: 16px;
         }
@@ -467,8 +516,8 @@
         .btn,
         input[type="submit"],
         input[type="button"] {
-            border: 1px solid #ea580c;
-            background: #ea580c;
+            border: 1px solid var(--button-bg);
+            background: var(--button-bg);
             color: #fff;
             padding: 9px 12px;
             border-radius: 10px;
@@ -501,13 +550,13 @@
 
         details > summary {
             cursor: pointer;
-            color: #9a3412;
+            color: var(--accent-text);
             font-weight: 600;
             list-style: none;
-            border: 1px solid #fdba74;
+            border: 1px solid var(--line);
             border-radius: 10px;
             padding: 7px 10px;
-            background: #fff7ed;
+            background: var(--accent-soft);
             display: inline-block;
         }
 
@@ -517,17 +566,32 @@
 
         table {
             border-collapse: collapse;
+            width: 100%;
+            background: var(--surface);
+            color: var(--text);
         }
 
         th {
-            background: #fff7ed;
-            color: #7c2d12;
+            background: var(--accent-soft);
+            color: var(--accent-text);
             font-weight: 700;
+        }
+
+        tbody tr {
+            background: color-mix(in srgb, var(--surface) 94%, var(--accent-soft));
+        }
+
+        tbody tr:nth-child(even) {
+            background: color-mix(in srgb, var(--surface) 88%, var(--accent-soft));
+        }
+
+        tbody tr:hover {
+            background: color-mix(in srgb, var(--surface) 80%, var(--accent-soft));
         }
 
         td, th {
             padding: 9px 8px;
-            border: 1px solid #fed7aa;
+            border: 1px solid var(--line);
             vertical-align: top;
         }
 
@@ -551,17 +615,17 @@
         .table-wrap { overflow-x: auto; }
         .text-muted { color: #6b7280; }
         .text-danger { color: #b91c1c; }
-        .text-primary { color: #9a3412; }
+        .text-primary { color: var(--accent-text); }
         .panel {
-            border: 1px solid #fed7aa;
+            border: 1px solid var(--line);
             border-radius: 12px;
             padding: 14px;
-            background: #fff;
+            background: var(--surface);
         }
         .alert {
             padding: 10px;
             border-radius: 10px;
-            border: 1px solid #fdba74;
+            border: 1px solid var(--line);
         }
         .alert-success {
             border-color: #86efac;
@@ -584,9 +648,9 @@
             color: #fff !important;
         }
         .btn-ghost {
-            border-color: #fdba74 !important;
-            background: #fff7ed !important;
-            color: #9a3412 !important;
+            border-color: var(--line) !important;
+            background: var(--accent-soft) !important;
+            color: var(--accent-text) !important;
         }
         .pagination-wrap {
             display: flex;
@@ -605,21 +669,21 @@
             justify-content: center;
             min-width: 38px;
             padding: 8px 12px;
-            border: 1px solid #fdba74;
+            border: 1px solid var(--line);
             border-radius: 10px;
-            background: #fff;
-            color: #9a3412;
+            background: var(--surface);
+            color: var(--accent-text);
             font-size: 13px;
             font-weight: 600;
             line-height: 1;
             text-decoration: none;
         }
         a.pagination-btn:hover {
-            background: #fff7ed;
+            background: var(--accent-soft);
         }
         .pagination-btn.active {
-            border-color: #ea580c;
-            background: #ea580c;
+            border-color: var(--accent);
+            background: var(--accent);
             color: #fff;
         }
         .pagination-btn.disabled {
@@ -651,9 +715,9 @@
             height: min(500px, calc(100vh - 95px));
             max-height: min(500px, calc(100vh - 95px));
             z-index: 1301;
-            border: 1px solid #fdba74;
+            border: 1px solid var(--line);
             border-radius: 14px;
-            background: #fff;
+            background: var(--surface);
             box-shadow: 0 20px 36px rgba(17, 24, 39, 0.22);
             display: none;
             overflow: hidden;
@@ -666,10 +730,10 @@
 
         .chatbot-header {
             padding: 11px 12px;
-            border-bottom: 1px solid #fed7aa;
-            background: #fff7ed;
+            border-bottom: 1px solid var(--line);
+            background: var(--accent-soft);
             font-weight: 700;
-            color: #9a3412;
+            color: var(--accent-text);
             font-size: 20px;
         }
 
@@ -680,7 +744,7 @@
             flex-direction: column;
             align-items: flex-start;
             gap: 10px;
-            background: #fff;
+            background: var(--surface);
         }
 
         .chatbot-bubble {
@@ -688,7 +752,7 @@
             border-radius: 12px;
             max-width: 88%;
             width: fit-content;
-            border: 1px solid #fed7aa;
+            border: 1px solid var(--line);
             font-size: 13px;
             line-height: 1.45;
             white-space: pre-wrap;
@@ -697,8 +761,8 @@
 
         .chatbot-bubble.user {
             margin-left: auto;
-            background: #fff7ed;
-            color: #7c2d12;
+            background: var(--accent-soft);
+            color: var(--accent-text);
         }
 
         .chatbot-bubble.bot {
@@ -716,9 +780,9 @@
         }
 
         .chatbot-quick-options button {
-            border: 1px solid #fdba74;
-            background: #fff7ed;
-            color: #9a3412;
+            border: 1px solid var(--line);
+            background: var(--accent-soft);
+            color: var(--accent-text);
             border-radius: 999px;
             padding: 6px 9px;
             font-size: 12px;
@@ -727,13 +791,13 @@
         }
 
         .chatbot-quick-options button:hover {
-            background: #ffedd5;
+            background: var(--accent-soft);
         }
 
         .chatbot-input-wrap {
-            border-top: 1px solid #fed7aa;
+            border-top: 1px solid var(--line);
             padding: 10px;
-            background: #fffaf5;
+            background: var(--accent-soft);
             display: grid;
             grid-template-columns: 1fr auto;
             gap: 8px;
@@ -742,7 +806,7 @@
 
         .chatbot-input {
             width: 100%;
-            border: 1px solid #fdba74;
+            border: 1px solid var(--line);
             border-radius: 10px;
             padding: 9px 10px;
             font-size: 13px;
@@ -765,8 +829,8 @@
 
         .app-dialog {
             width: min(460px, 100%);
-            background: #fff;
-            border: 1px solid #fdba74;
+            background: var(--surface);
+            border: 1px solid var(--line);
             border-radius: 14px;
             box-shadow: 0 16px 36px rgba(124, 45, 18, 0.24);
             overflow: hidden;
@@ -774,9 +838,9 @@
 
         .app-dialog-head {
             padding: 12px 14px;
-            border-bottom: 1px solid #fed7aa;
-            background: #fff7ed;
-            color: #9a3412;
+            border-bottom: 1px solid var(--line);
+            background: var(--accent-soft);
+            color: var(--accent-text);
             font-size: 16px;
             font-weight: 800;
         }
@@ -801,7 +865,7 @@
 
         .app-dialog-input {
             width: 100%;
-            border: 1px solid #fdba74;
+            border: 1px solid var(--line);
             border-radius: 10px;
             padding: 9px 10px;
             font-size: 14px;
@@ -809,23 +873,23 @@
         }
 
         .app-dialog-input:focus {
-            border-color: #ea580c;
-            box-shadow: 0 0 0 3px #ffedd5;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-soft);
         }
 
         .app-dialog-actions {
             padding: 10px 14px 14px;
-            border-top: 1px solid #fed7aa;
-            background: #fffaf5;
+            border-top: 1px solid var(--line);
+            background: var(--accent-soft);
             display: flex;
             justify-content: flex-end;
             gap: 8px;
         }
 
         .app-dialog-btn {
-            border: 1px solid #fdba74;
-            background: #fff7ed;
-            color: #9a3412;
+            border: 1px solid var(--line);
+            background: var(--accent-soft);
+            color: var(--accent-text);
             border-radius: 10px;
             padding: 8px 12px;
             font-size: 13px;
@@ -834,8 +898,8 @@
         }
 
         .app-dialog-btn-primary {
-            border-color: #ea580c;
-            background: #ea580c;
+            border-color: var(--accent);
+            background: var(--accent);
             color: #fff;
         }
 
@@ -847,7 +911,7 @@
         html[data-theme="dark"] .chatbot-header {
             background: #1f2937;
             border-color: #374151;
-            color: #fed7aa;
+            color: var(--line);
         }
 
         html[data-theme="dark"] .chatbot-messages {
@@ -857,7 +921,7 @@
         html[data-theme="dark"] .chatbot-bubble.user {
             background: #1f2937;
             border-color: #374151;
-            color: #fed7aa;
+            color: var(--line);
         }
 
         html[data-theme="dark"] .chatbot-bubble.bot {
@@ -869,7 +933,7 @@
         html[data-theme="dark"] .chatbot-quick-options button {
             background: #1f2937;
             border-color: #374151;
-            color: #fed7aa;
+            color: var(--line);
         }
 
         html[data-theme="dark"] .chatbot-quick-options button:hover {
@@ -895,7 +959,7 @@
         html[data-theme="dark"] .app-dialog-head {
             background: #1f2937;
             border-color: #374151;
-            color: #fed7aa;
+            color: var(--line);
         }
 
         html[data-theme="dark"] .app-dialog-body {
@@ -916,7 +980,7 @@
         html[data-theme="dark"] .app-dialog-btn {
             background: #1f2937;
             border-color: #374151;
-            color: #fed7aa;
+            color: var(--line);
         }
 
         html[data-theme="dark"] {
@@ -952,6 +1016,19 @@
             color: #f3f4f6;
         }
 
+        html[data-theme="dark"] tbody tr {
+            background: #111827;
+            color: #e5e7eb;
+        }
+
+        html[data-theme="dark"] tbody tr:nth-child(even) {
+            background: #0f172a;
+        }
+
+        html[data-theme="dark"] tbody tr:hover {
+            background: #1f2937;
+        }
+
         html[data-theme="dark"] td,
         html[data-theme="dark"] th,
         html[data-theme="dark"] .alert {
@@ -960,13 +1037,13 @@
 
         html[data-theme="dark"] .menu a:hover,
         html[data-theme="dark"] .menu a.active {
-            color: #fed7aa;
+            color: var(--line);
             border-left-color: #fb923c;
         }
 
         html[data-theme="dark"] .ui-toggle-btn {
             background: #1f2937;
-            color: #fed7aa;
+            color: var(--line);
             border-color: #374151;
         }
 
@@ -991,7 +1068,7 @@
         html[data-theme="dark"] .pagination-btn {
             background: #111827;
             border-color: #374151;
-            color: #fed7aa;
+            color: var(--line);
         }
         html[data-theme="dark"] a.pagination-btn:hover {
             background: #1f2937;
@@ -1230,6 +1307,7 @@
     $userRole = match ($rawUserRole) {
         'owner' => 'kepsek',
         'operator' => 'admin_sekolah',
+        'pembimbing' => 'pembimbing_pkl',
         default => $rawUserRole,
     };
     $sidebarTimezone = $appProfile['timezone'] ?? 'Asia/Jakarta';
@@ -1242,7 +1320,7 @@
     };
     $sections = $nav[$userRole] ?? [];
 
-    $permissionDrivenRoles = ['admin_sekolah', 'siswa', 'pembimbing_pkl', 'instruktur', 'kajur', 'wali_kelas', 'kesiswaan', 'kepsek'];
+    $permissionDrivenRoles = ['superadmin', 'admin_sekolah', 'siswa', 'pembimbing_pkl', 'instruktur', 'kajur', 'wali_kelas', 'kesiswaan', 'kepsek', 'wakil_kepsek'];
     if (in_array($userRole, $permissionDrivenRoles, true)) {
         $canonicalKey = static function (string $key): string {
             return match (true) {
@@ -1268,8 +1346,11 @@
             ['key' => 'absensi', 'name' => 'Absensi Harian', 'url' => '/absensi', 'section' => 'Operasional'],
             ['key' => 'pengajuan', 'name' => 'Pengajuan Izin/Sakit', 'url' => '/pengajuan', 'section' => 'Operasional'],
             ['key' => 'riwayat-catatan', 'name' => 'Riwayat Catatan', 'url' => '/riwayat-catatan', 'section' => 'Operasional', 'allowed_roles' => ['siswa']],
+            ['key' => 'catatan-bimbingan', 'name' => 'Catatan Bimbingan', 'url' => '/catatan-bimbingan', 'section' => 'Operasional', 'allowed_roles' => ['siswa']],
             ['key' => 'validasi', 'name' => 'Validasi Absensi', 'url' => '/validasi', 'section' => 'Validasi', 'hidden_roles' => ['instruktur']],
+            ['key' => 'validasi/catatan-bimbingan', 'name' => 'Validasi Catatan Bimbingan', 'url' => '/validasi/catatan-bimbingan', 'section' => 'Validasi', 'allowed_roles' => ['pembimbing_pkl']],
             ['key' => 'validasi-pengajuan', 'name' => 'Validasi Pengajuan', 'url' => '/validasi-pengajuan', 'section' => 'Validasi', 'hidden_roles' => ['instruktur']],
+            ['key' => 'wakil-kepsek/validasi-kehadiran', 'name' => 'Validasi Kehadiran', 'url' => '/wakil-kepsek/validasi-kehadiran', 'section' => 'Validasi', 'allowed_roles' => ['wakil_kepsek']],
             ['key' => 'summary-report', 'name' => 'Validasi Mingguan', 'url' => '/summary-report', 'section' => 'Laporan'],
             ['key' => 'summary-report/rekap', 'name' => 'Rekap Mingguan', 'url' => '/summary-report/rekap', 'section' => 'Laporan'],
             [
@@ -1282,8 +1363,8 @@
             ],
             ['key' => 'fitur-shared/laporan-grafik', 'name' => 'Laporan', 'url' => '/fitur-shared/laporan-grafik', 'section' => 'Laporan'],
             ['key' => 'fitur/manajemen-pengguna', 'name' => 'Manajemen Pengguna', 'url' => '/fitur/manajemen-pengguna', 'section' => 'Master Data'],
+            ['key' => 'fitur/master-akademik', 'name' => 'Tambah Akademik', 'url' => '/fitur/master-akademik', 'section' => 'Master Data'],
             ['key' => 'kajur/siswa', 'name' => 'Monitoring Siswa', 'url' => '/kajur/siswa', 'section' => 'Master Data', 'allowed_roles' => ['kajur', 'admin_sekolah', 'superadmin']],
-            ['key' => 'tab/deleted', 'name' => 'Tab Deleted (Global)', 'url' => '/tab/deleted', 'section' => 'Master Data', 'allowed_roles' => ['superadmin']],
             ['key' => 'fitur/hak-akses-menu', 'name' => 'Hak Akses Menu', 'url' => '/fitur/hak-akses-menu', 'section' => 'Master Data'],
             ['key' => 'fitur/setting-web', 'name' => 'Setting Website', 'url' => '/fitur/setting-web', 'section' => 'Master Data'],
             ['key' => 'fitur/audit-log', 'name' => 'Log Activity', 'url' => '/fitur/audit-log', 'section' => 'Keamanan & Audit'],
@@ -1304,14 +1385,21 @@
             ->unique()
             ->values()
             ->all();
+        foreach (['dashboard', 'profil'] as $alwaysVisibleKey) {
+            if (! in_array($alwaysVisibleKey, $allowedCanonicalKeys, true)) {
+                $allowedCanonicalKeys[] = $alwaysVisibleKey;
+            }
+        }
 
         $bySection = [];
         foreach ($menuCatalog as $item) {
-            if (isset($item['allowed_roles']) && is_array($item['allowed_roles']) && ! in_array($userRole, $item['allowed_roles'], true)) {
-                continue;
-            }
-            if (isset($item['hidden_roles']) && is_array($item['hidden_roles']) && in_array($userRole, $item['hidden_roles'], true)) {
-                continue;
+            if ($userRole !== 'superadmin') {
+                if (isset($item['allowed_roles']) && is_array($item['allowed_roles']) && ! in_array($userRole, $item['allowed_roles'], true)) {
+                    continue;
+                }
+                if (isset($item['hidden_roles']) && is_array($item['hidden_roles']) && in_array($userRole, $item['hidden_roles'], true)) {
+                    continue;
+                }
             }
             if (! in_array($item['key'], $allowedCanonicalKeys, true)) {
                 if (! \App\Support\MenuAccess::canAccess($userRole, $item['key'])) {
@@ -1335,6 +1423,30 @@
 
         $sections = array_values(array_filter(array_values($bySection), fn ($section) => ! empty($section['items'])));
     }
+    $ensureMenuItem = static function (array &$sections, string $sectionName, string $name, string $url): void {
+        $sectionIndex = null;
+        foreach ($sections as $idx => $section) {
+            if (($section['section'] ?? '') === $sectionName) {
+                $sectionIndex = $idx;
+                break;
+            }
+        }
+        if ($sectionIndex === null) {
+            $sections[] = ['section' => $sectionName, 'items' => []];
+            $sectionIndex = array_key_last($sections);
+        }
+        $items = $sections[$sectionIndex]['items'] ?? [];
+        foreach ($items as $item) {
+            if (($item['url'] ?? '') === $url) {
+                return;
+            }
+        }
+        array_unshift($items, ['name' => $name, 'url' => $url, 'icon' => 'MN']);
+        $sections[$sectionIndex]['items'] = $items;
+    };
+    $ensureMenuItem($sections, 'Beranda', 'Dashboard', '/dashboard');
+    $ensureMenuItem($sections, 'Beranda', 'Profil Saya', '/profil');
+
     $identityLabel = $rawUserRole === 'siswa' ? 'NIS' : 'NUPTK';
     $identityValue = $rawUserRole === 'siswa'
         ? (auth()->user()->nis ?? '-')
@@ -1365,8 +1477,12 @@
         </div>
         <nav class="menu">
             @foreach ($sections as $section)
-                <div class="menu-section">
-                    <div class="menu-title">{{ $section['section'] }}</div>
+                <div class="menu-section" data-menu-section>
+                    <button type="button" class="menu-section-toggle" data-menu-toggle aria-expanded="false">
+                        <span>{{ $section['section'] }}</span>
+                        <span class="menu-section-caret">▼</span>
+                    </button>
+                    <div class="menu-section-items" data-menu-items>
                     @foreach ($section['items'] as $item)
                         @php
                             $menuKey = trim($item['url'], '/');
@@ -1385,20 +1501,22 @@
                             if ($menuKey === 'fitur-admin/laporan-grafik') {
                                 $menuActiveCandidates[] = 'fitur-shared/laporan-grafik';
                             }
+                            $isCoreMenu = in_array($menuKey, ['dashboard', 'profil'], true);
                             $isActiveMenu = false;
                             foreach ($menuActiveCandidates as $candidate) {
-                                $allowWildcard = $candidate !== 'summary-report';
+                                $allowWildcard = ! in_array($candidate, ['summary-report', 'validasi'], true);
                                 if (request()->is($candidate) || ($allowWildcard && request()->is($candidate.'/*'))) {
                                     $isActiveMenu = true;
                                     break;
                                 }
                             }
                         @endphp
-                        @continue(! $isAllowed)
+                        @continue(! $isAllowed && ! $isCoreMenu)
                         <a class="{{ $isActiveMenu ? 'active' : '' }}" href="{{ $item['url'] }}">
                             {{ $item['name'] }}
                         </a>
                     @endforeach
+                    </div>
                 </div>
             @endforeach
         </nav>
@@ -1426,7 +1544,7 @@
                         <span>{{ $greeting }},</span>
                         <strong>{{ auth()->user()->name }}</strong>
                     </div>
-                    <small>{{ $identityLabel }}: {{ $identityValue }} | Kontak: {{ $appProfile['contact'] ?? '-' }}</small>
+                    <small>{{ $identityLabel }}: {{ $identityValue }}</small>
                 </div>
             </div>
             <div class="topbar-actions">
@@ -1449,14 +1567,6 @@
         <section class="content">
             @yield('content')
         </section>
-        <footer class="footer">
-            <div>{{ $appProfile['footer_text'] ?? 'Absensi PKL' }}</div>
-            <div class="footer-links">
-                @foreach (($appProfile['footer_links'] ?? []) as $link)
-                    <a href="{{ $link['url'] }}">{{ $link['label'] }}</a>
-                @endforeach
-            </div>
-        </footer>
     </main>
 </div>
 <div id="app-dialog-backdrop" class="app-dialog-backdrop" aria-hidden="true">
@@ -1496,6 +1606,8 @@
         const languageEnLabel = document.getElementById('ui-lang-en-label');
         const themeSwitch = document.getElementById('ui-theme-switch');
         const sidebarThemeLabel = document.getElementById('sidebar-theme-label');
+        const menuSections = Array.from(document.querySelectorAll('[data-menu-section]'));
+        const MENU_SECTION_STORAGE_KEY = 'ui_sidebar_open_sections';
         const originalTextMap = new WeakMap();
         const originalTitle = document.title;
         const chatbotUserRole = @json($userRole ?? 'siswa');
@@ -1518,6 +1630,59 @@
         const showAppAlert = (message, options = {}) => window.AppDialog.alert(message, options);
         const showAppConfirm = (message, options = {}) => window.AppDialog.confirm(message, options);
         const showAppPrompt = (message, options = {}) => window.AppDialog.prompt(message, options);
+
+        function readOpenSections() {
+            try {
+                const raw = localStorage.getItem(MENU_SECTION_STORAGE_KEY) || '[]';
+                const parsed = JSON.parse(raw);
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (_) {
+                return [];
+            }
+        }
+
+        function saveOpenSections(names) {
+            try {
+                localStorage.setItem(MENU_SECTION_STORAGE_KEY, JSON.stringify(names));
+            } catch (_) {}
+        }
+
+        function setupSidebarAccordion() {
+            if (menuSections.length === 0) return;
+
+            const savedOpen = readOpenSections();
+            const defaultOpen = new Set(savedOpen);
+
+            menuSections.forEach((section) => {
+                const toggle = section.querySelector('[data-menu-toggle]');
+                const title = toggle?.querySelector('span')?.textContent?.trim() || '';
+                const hasActiveLink = !!section.querySelector('a.active');
+                const shouldOpen = hasActiveLink || defaultOpen.has(title);
+                section.classList.toggle('open', shouldOpen);
+                if (toggle) {
+                    toggle.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+                }
+            });
+
+            menuSections.forEach((section) => {
+                const toggle = section.querySelector('[data-menu-toggle]');
+                if (!toggle) return;
+
+                toggle.addEventListener('click', function () {
+                    const currentlyOpen = section.classList.contains('open');
+                    section.classList.toggle('open', !currentlyOpen);
+                    toggle.setAttribute('aria-expanded', currentlyOpen ? 'false' : 'true');
+
+                    const openNames = menuSections
+                        .filter((item) => item.classList.contains('open'))
+                        .map((item) => item.querySelector('[data-menu-toggle] span')?.textContent?.trim() || '')
+                        .filter((name) => name !== '');
+                    saveOpenSections(openNames);
+                });
+            });
+        }
+
+        setupSidebarAccordion();
 
         function closeDialog(result) {
             if (!dialogBackdrop?.classList.contains('is-open')) return;
@@ -1633,6 +1798,22 @@
             },
         };
 
+        @if (session('success'))
+            window.setTimeout(() => {
+                window.AppDialog.alert(@json(session('success')), {
+                    title: localText('Berhasil', 'Success'),
+                });
+            }, 120);
+        @endif
+
+        @if (session('error'))
+            window.setTimeout(() => {
+                window.AppDialog.alert(@json(session('error')), {
+                    title: localText('Gagal', 'Error'),
+                });
+            }, 120);
+        @endif
+
         const phrasePairs = [
             ['Dashboard', 'Dashboard'],
             ['Dasbor', 'Dashboard'],
@@ -1738,7 +1919,7 @@
             ['Aksi', 'Action'],
             ['Belum ada backup.', 'No backups yet.'],
             [' oleh ', ' by '],
-            ['Import & Export User', 'Import & Export Users'],
+            ['Import & Export User', 'User Import'],
             ['Nama PT', 'Company Name'],
             ['Cari Lokasi PT (Google Maps)', 'Search Company Location (Google Maps)'],
             ['Contoh: PT Telkom Indonesia Jakarta', 'Example: PT Telkom Indonesia Jakarta'],
@@ -1797,6 +1978,8 @@
             ['Import siswa selesai:', 'Student import completed:'],
             ['baris diproses,', 'rows processed,'],
             ['baris dilewati.', 'rows skipped.'],
+            ['Catatan:', 'Note:'],
+            ['wajib membuat data master jurusan (department) dan kelas terlebih dahulu sebelum import user.', 'you must create department and class master data before importing users.'],
             ['Laporan Kehadiran', 'Attendance Report'],
             ['Laporan Cetak', 'Print Report'],
             ['Jurusan', 'Department'],
@@ -1946,6 +2129,8 @@
             ['Tidak ada pending absensi.', 'No pending attendance.'],
             ['Tidak ada pending pengajuan.', 'No pending requests.'],
             ['Tidak ada pending laporan.', 'No pending reports.'],
+            ['Tidak ada data pending validasi kehadiran.', 'No pending attendance validation data.'],
+            ['Select jurusan untuk menampilkan data siswa.', 'Select a department to display student data.'],
             ['Data Kelas Wali', 'Homeroom Class Data'],
             ['Total Siswa Kelas', 'Total Students in Class'],
             ['Kelas wali belum diatur. Silakan isi `class_name` pada akun wali kelas.', 'Homeroom class is not set. Please fill `class_name` on the homeroom account.'],
@@ -1971,6 +2156,29 @@
             ['hari', 'days'],
             ['kali', 'times'],
             ['Manajemen Pengguna', 'User Management'],
+            ['Tambah Akademik', 'Academic Additions'],
+            ['Tambah Jurusan & Kelas', 'Add Department & Class'],
+            ['Tambah Jurusan', 'Add Department'],
+            ['Tambah Kelas', 'Add Class'],
+            ['Aksi', 'Action'],
+            ['Detail', 'Details'],
+            ['Edit', 'Edit'],
+            ['Hapus', 'Delete'],
+            ['Nama Jurusan', 'Department Name'],
+            ['Nama Kelas', 'Class Name'],
+            ['Tambah Jurusan', 'Add Department'],
+            ['Tambah Kelas', 'Add Class'],
+            ['Belum ada jurusan.', 'No departments yet.'],
+            ['Belum ada kelas.', 'No classes yet.'],
+            ['Jurusan berhasil ditambahkan.', 'Department added successfully.'],
+            ['Kelas berhasil ditambahkan.', 'Class added successfully.'],
+            ['Jurusan berhasil diperbarui.', 'Department updated successfully.'],
+            ['Jurusan berhasil dihapus.', 'Department deleted successfully.'],
+            ['Kelas berhasil diperbarui.', 'Class updated successfully.'],
+            ['Kelas berhasil dihapus.', 'Class deleted successfully.'],
+            ['Jurusan tidak bisa dihapus karena masih dipakai pada data kelas.', 'Department cannot be deleted because it is still used by class data.'],
+            ['Hapus jurusan ini?', 'Delete this department?'],
+            ['Hapus kelas ini?', 'Delete this class?'],
             ['Tambah User', 'Add User'],
             ['Tambah Siswa', 'Add Student'],
             ['Tambah Student', 'Add Student'],
@@ -1990,6 +2198,8 @@
             ['Pilih', 'Select'],
             ['Terhapus', 'Deleted'],
             ['Pilih Tempat PKL', 'Select Internship Location'],
+            ['Pilih Kelas', 'Select Class'],
+            ['Pilih Jurusan', 'Select Department'],
             ['Set Tempat PKL', 'Set Internship Location'],
             ['Tempat PKL', 'Internship Location'],
             ['Telepon', 'Phone'],
@@ -2002,10 +2212,11 @@
             ['Tutup', 'Close'],
             ['NIS (wajib untuk siswa)', 'NIS (required for student)'],
             ['NUPTK (wajib selain siswa)', 'NUPTK (required for non-student)'],
-            ['Kelas (khusus siswa/wali kelas)', 'Class (for student/homeroom only)'],
+            ['Kelas (opsional untuk semua role)', 'Class (optional for all roles)'],
             ['Jurusan (contoh: RPL)', 'Department (example: RPL)'],
             ['No WA (opsional)', 'WhatsApp Number (optional)'],
             ['Password baru (opsional)', 'New password (optional)'],
+            ['Reset Password', 'Reset Password'],
             ['Konfirmasi Delete', 'Delete Confirmation'],
             ['Yakin ingin menghapus user ini?', 'Are you sure you want to delete this user?'],
             ['Nama Siswa', 'Student Name'],
@@ -2013,13 +2224,25 @@
             ['Role: siswa (otomatis)', 'Role: student (automatic)'],
             ['Save Siswa', 'Save Student'],
             ['Nama Guru/Staff', 'Teacher/Staff Name'],
-            ['Kelas Binaan (khusus wali kelas)', 'Managed Class (homeroom only)'],
+            ['Kelas Binaan (opsional untuk semua role)', 'Managed Class (optional for all roles)'],
             ['Jurusan (opsional)', 'Department (optional)'],
             ['Save Guru/Staff', 'Save Teacher/Staff'],
             ['Tidak ada data user.', 'No user data found.'],
             ['Tidak ada data yang cocok dengan pencarian.', 'No data matches the search.'],
+            ['Daftar Catatan Bimbingan Siswa', 'Student Guidance Notes List'],
+            ['Daftar Student Guidance Notes', 'Student Guidance Notes List'],
+            ['Nama', 'Name'],
+            ['Kelas', 'Class'],
+            ['Catatan Siswa', 'Student Notes'],
+            ['Catatan Pembimbing', 'Instructor Notes'],
+            ['Belum ada siswa yang membuat catatan.', 'No student notes yet.'],
+            ['No data yet siswa yang membuat catatan.', 'No student notes yet.'],
             ['Setujui', 'Approve'],
             ['Tolak', 'Reject'],
+            ['Terbaru Disetujui', 'Latest Approved'],
+            ['Terbaru Ditolak', 'Latest Rejected'],
+            ['Terbaru Approved', 'Latest Approved'],
+            ['Terbaru Rejected', 'Latest Rejected'],
             ['Disetujui', 'Approved'],
             ['Ditolak', 'Rejected'],
             ['Pulihkan', 'Restore'],
@@ -2033,10 +2256,21 @@
             ['terbuka', 'open'],
             ['Rencana:', 'Plan:'],
             ['Realisasi:', 'Actual:'],
+            ['Ringkasan Data', 'Data Summary'],
+            ['Type: SAKIT', 'Type: SICK'],
+            ['Personality & Work Ethic Assessment', 'Penilaian Kepribadian & Etos Kerja'],
+            ['Indikator', 'Indicator'],
+            ['Poor', 'Kurang'],
+            ['Keramahan', 'Friendliness'],
+            ['Senyum', 'Smile'],
+            ['Penampilan', 'Appearance'],
+            ['Komunikasi', 'Communication'],
+            ['Realisasi Kerja', 'Work Realization'],
             ['Navigasi Pagination', 'Pagination Navigation'],
             ['Lihat saja', 'View only'],
             ['User berhasil dibuat.', 'User created successfully.'],
             ['User berhasil diperbarui.', 'User updated successfully.'],
+            ['Password berhasil direset ke 12345678 dan user wajib ganti password saat login berikutnya.', 'Password has been reset to 12345678 and the user must change it on next login.'],
             ['User tidak ditemukan.', 'User not found.'],
             ['User sudah berada di tab Deleted.', 'User is already in Deleted tab.'],
             ['User berhasil di delete.', 'User soft deleted.'],
@@ -2052,6 +2286,9 @@
             ['NIS wajib diisi untuk role siswa.', 'NIS is required for student role.'],
             ['NUPTK wajib diisi untuk role selain siswa.', 'NUPTK is required for non-student role.'],
             ['NIS/NUPTK ini sudah digunakan.', 'This NIS/NUPTK is already used.'],
+            ['Jurusan tidak terdaftar di Master Akademik.', 'Department is not registered in Academic Master.'],
+            ['Kelas tidak terdaftar di Master Akademik.', 'Class is not registered in Academic Master.'],
+            ['Kelas tidak sesuai dengan jurusan yang dipilih.', 'Class does not match the selected department.'],
             ['Foto profil bisa diambil dari kamera langsung atau upload file, lalu crop sesuai kebutuhan.', 'Profile photo can be captured directly from camera or uploaded, then cropped as needed.'],
             ['Preview Foto Profil', 'Profile Photo Preview'],
             ['Foto Profil', 'Profile Photo'],
@@ -2073,7 +2310,12 @@
             ['Pengajuan', 'Requests'],
             ['Pengajuan Izin/Sakit', 'Leave/Sick Request'],
             ['Riwayat Catatan', 'Notes History'],
-            ['Riwayat Catatan Pembimbing Sekolah, pembimbing, & Kajur', 'School Mentor, Mentor, & Head of Department Notes History'],
+            ['Riwayat Catatan Pembimbing Sekolah', 'School Mentor Notes History'],
+            ['Catatan Bimbingan', 'Guidance Notes'],
+            ['Validasi Catatan Bimbingan', 'Guidance Notes Validation'],
+            ['Validasi Kehadiran', 'Attendance Final Validation'],
+            ['Wakil Kepsek', 'Vice Principal'],
+            ['Absensi', 'Attendance'],
             ['Kategori', 'Category'],
             ['Jumlah Catatan', 'Notes Count'],
             ['Detail Catatan', 'Note Details'],
@@ -2932,8 +3174,34 @@
             });
         }
 
+        function bindNumericIdentityFields() {
+            const selectors = [
+                'input[name="nis"]',
+                'input[name="nuptk"]',
+                'input[name="phone"]',
+            ];
+            const fields = document.querySelectorAll(selectors.join(','));
+            fields.forEach((field) => {
+                field.setAttribute('inputmode', 'numeric');
+                field.setAttribute('pattern', '[0-9]*');
+                field.setAttribute('autocomplete', 'off');
+
+                const sanitize = () => {
+                    const cleaned = (field.value || '').replace(/\D+/g, '');
+                    if (field.value !== cleaned) {
+                        field.value = cleaned;
+                    }
+                };
+
+                field.addEventListener('input', sanitize);
+                field.addEventListener('blur', sanitize);
+                sanitize();
+            });
+        }
+
         requestCoordinate();
         bindCoordinateToForms();
+        bindNumericIdentityFields();
 
         languageSwitches.forEach((radio) => {
             radio.checked = radio.value === savedLang;
@@ -2965,5 +3233,7 @@
 </script>
 </body>
 </html>
+
+
 
 

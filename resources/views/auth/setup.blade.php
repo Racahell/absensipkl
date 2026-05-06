@@ -61,7 +61,7 @@
                 </div>
                 <div>
                     <label>Nomor HP</label>
-                    <input type="text" name="phone" value="{{ old('phone', $user->phone) }}" required>
+                    <input type="text" name="phone" value="{{ old('phone', $user->phone) }}" inputmode="numeric" pattern="[0-9]*" required>
                 </div>
             </div>
             <button class="btn" type="submit" style="margin-top:10px;">Simpan Kontak</button>
@@ -122,6 +122,14 @@
         </div>
     @endif
 </div>
+<script>
+    document.querySelectorAll('input[name="phone"]').forEach((input) => {
+        const sanitize = () => {
+            input.value = (input.value || '').replace(/\D+/g, '');
+        };
+        input.addEventListener('input', sanitize);
+        input.addEventListener('blur', sanitize);
+    });
+</script>
 </body>
 </html>
-

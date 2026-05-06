@@ -172,7 +172,7 @@
         @endif
         <form method="GET" action="{{ route('reports.weekly.analysis') }}" class="weekly-toolbar">
             <div>
-                <label for="week_start">Minggu Mulai</label>
+                <label for="week_start">Tanggal</label>
                 <input id="week_start" type="date" name="week_start" value="{{ $weekStart->toDateString() }}">
             </div>
             @if (! in_array($role, ['kajur', 'wali_kelas'], true))

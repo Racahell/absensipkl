@@ -27,6 +27,12 @@ class MenuKeyResolver
         if ($request->is('riwayat-catatan') || $request->is('riwayat-catatan/*')) {
             return 'riwayat-catatan';
         }
+        if ($request->is('catatan-bimbingan') || $request->is('catatan-bimbingan/*')) {
+            return 'catatan-bimbingan';
+        }
+        if ($request->is('wakil-kepsek/validasi-kehadiran') || $request->is('wakil-kepsek/validasi-kehadiran/*')) {
+            return 'wakil-kepsek/validasi-kehadiran';
+        }
 
         if ($request->is('validasi-laporan') || $request->is('validasi-laporan/*') ||
             $request->is('review/laporan') || $request->is('review/laporan/*')) {
@@ -39,6 +45,9 @@ class MenuKeyResolver
 
         if ($request->is('validasi-pengajuan') || $request->is('validasi-pengajuan/*')) {
             return 'validasi-pengajuan';
+        }
+        if ($request->is('validasi/catatan-bimbingan') || $request->is('validasi/catatan-bimbingan/*')) {
+            return 'validasi/catatan-bimbingan';
         }
 
         if ($request->is('validasi') || $request->is('validasi/*') ||
@@ -63,6 +72,11 @@ class MenuKeyResolver
         if ($request->is('fitur/setting-web') || $request->is('fitur/setting-web/*') ||
             $request->is('fitur-admin/setting-web') || $request->is('fitur-admin/setting-web/*')) {
             return 'fitur/setting-web';
+        }
+
+        if ($request->is('fitur/lokasi-pkl') || $request->is('fitur/lokasi-pkl/*') ||
+            $request->is('fitur-admin/lokasi-pkl') || $request->is('fitur-admin/lokasi-pkl/*')) {
+            return 'fitur/lokasi-pkl';
         }
 
         if ($request->is('fitur/backup-restore') || $request->is('fitur/backup-restore/*') ||
@@ -96,6 +110,11 @@ class MenuKeyResolver
         }
 
         if ($request->is('laporan/export/*') || $request->is('laporan/print')) {
+            $period = strtolower(trim((string) $request->query('period', '')));
+            if ($period === 'weekly') {
+                return 'summary-report/rekap';
+            }
+
             return 'fitur-shared/laporan-grafik';
         }
 

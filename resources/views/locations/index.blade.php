@@ -37,9 +37,9 @@
             text-decoration: none;
             padding: 8px 12px;
             border-radius: 999px;
-            border: 1px solid #fdba74;
-            color: #9a3412;
-            background: #fff7ed;
+            border: 1px solid var(--line);
+            color: var(--accent-text);
+            background: var(--accent-soft);
             font-size: 13px;
             font-weight: 600;
             line-height: 1;
@@ -47,9 +47,9 @@
             align-items: center;
         }
         .tab-link.active {
-            background: #ea580c;
+            background: var(--accent);
             color: #fff;
-            border-color: #ea580c;
+            border-color: var(--accent);
         }
         .locations-filter-wrap {
             display: flex;
@@ -161,7 +161,7 @@
                 <a href="{{ route('fitur.lokasi-pkl', ['tab' => 'active', 'per_page' => $perPage]) }}" class="tab-link {{ ($tab ?? 'active') === 'active' ? 'active' : '' }}">
                     Active ({{ $activeCount ?? 0 }})
                 </a>
-                @if ($isSuperadmin ?? false)
+                @if ($hasDeletedTabAccess ?? false)
                     <a href="{{ route('fitur.lokasi-pkl', ['tab' => 'deleted', 'per_page' => $perPage]) }}" class="tab-link {{ ($tab ?? 'active') === 'deleted' ? 'active' : '' }}">
                         Deleted ({{ $deletedCount ?? 0 }})
                     </a>
@@ -200,7 +200,7 @@
                     @endif
                 </div>
                 <div class="bulk-action-row right">
-                    @if (($tab ?? 'active') !== 'active' && ($isSuperadmin ?? false))
+                    @if (($tab ?? 'active') !== 'active' && ($hasDeletedTabAccess ?? false))
                         <button type="button" class="btn-success bulk-location-btn" data-action="restore">Restore Selected</button>
                         <button type="button" class="btn-danger bulk-location-btn" data-action="force_delete">Delete Permanent Selected</button>
                     @endif

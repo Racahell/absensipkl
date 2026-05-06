@@ -3,14 +3,11 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use Illuminate\Auth\AuthenticationException;
-use Illuminate\Validation\ValidationException;
 use App\Http\Middleware\AuditTrailMiddleware;
 use App\Http\Middleware\EnsureAuthSetupCompletedMiddleware;
 use App\Http\Middleware\ForcePasswordResetMiddleware;
 use App\Http\Middleware\MenuPermissionMiddleware;
 use App\Http\Middleware\RoleMiddleware;
-use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -31,27 +28,5 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->render(function (\Throwable $exception, $request) {
-            if ($request->expectsJson()) {
-                return null;
-            }
-
-            if ($exception instanceof ValidationException) {
-                return null;
-            }
-            
-            if ($exception instanceof AuthenticationException) {
-                return redirect()->guest(route('login'));
-            }
-
-            $status = $exception instanceof HttpExceptionInterface
-                ? $exception->getStatusCode()
-                : 500;
-
-            if (view()->exists('errors.'.$status)) {
-                return response()->view('errors.'.$status, [], $status);
-            }
-
-            return response()->view('errors.500', [], 500);
-        });
+        // Use Laravel default exception rendering to avoid early-container failures.
     })->create();

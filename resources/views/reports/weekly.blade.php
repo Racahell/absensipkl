@@ -6,9 +6,10 @@
             $raw = strtolower(trim((string) $status));
             return match (true) {
                 $raw === '', $raw === '-' => '-',
-                $raw === 'pending_pembimbing' => 'pending pembimbing sekolah',
-                $raw === 'pending_instruktur' => 'approved pembimbing sekolah',
-                $raw === 'pending_kajur' => 'approved instruktur',
+                $raw === 'pending',
+                $raw === 'pending_pembimbing',
+                $raw === 'pending_instruktur',
+                $raw === 'pending_kajur' => '-',
                 $raw === 'hadir',
                 $raw === 'approved_final',
                 str_starts_with($raw, 'approved'),
@@ -88,6 +89,45 @@
             gap: 12px;
         }
 
+        .weekly-student-table {
+            table-layout: fixed;
+            width: 100%;
+        }
+
+        .weekly-student-table th,
+        .weekly-student-table td {
+            vertical-align: top;
+        }
+
+        .weekly-student-table .col-no { width: 44px; }
+        .weekly-student-table .col-name { width: 130px; }
+        .weekly-student-table .col-nis { width: 96px; }
+        .weekly-student-table .col-class { width: 80px; }
+        .weekly-student-table .col-time { width: 76px; }
+        .weekly-student-table .col-absen { width: 72px; }
+        .weekly-student-table .col-note { width: 170px; }
+        .weekly-student-table .col-note-wide { width: 210px; }
+
+        .weekly-student-table .text-cell {
+            white-space: normal;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
+
+        .weekly-student-table textarea[name="mentor_note"] {
+            width: 100%;
+            min-height: 70px;
+            resize: vertical;
+            box-sizing: border-box;
+        }
+
+        .weekly-student-table textarea[name="kajur_note"] {
+            width: 100%;
+            min-height: 70px;
+            resize: vertical;
+            box-sizing: border-box;
+        }
+
         .weekly-grid.single {
             grid-template-columns: 1fr;
         }
@@ -136,6 +176,12 @@
             align-items: center;
             justify-content: flex-end;
             margin-top: 10px;
+        }
+        .mini-pagination-info {
+            margin-right: auto;
+            color: #9a3412;
+            font-size: 12px;
+            font-weight: 600;
         }
 
         .mini-page-btn {
@@ -193,9 +239,6 @@
 
     <div class="card mb-14">
         <h3 class="mt-0">Summary Report Mingguan</h3>
-        <div class="weekly-headline">
-            <span>Status: {{ $formatStatus((string) ($weeklyValidation?->status ?? 'pending')) }}</span>
-        </div>
         @if (in_array($role, ['kajur', 'wali_kelas', 'instruktur'], true))
             <p class="text-primary" style="margin-top:-4px; margin-bottom:10px;">
                 Jurusan: <strong>{{ $selectedDepartment !== '' ? $selectedDepartment : '-' }}</strong>
@@ -208,8 +251,8 @@
         @endif
         <form method="GET" action="{{ route('reports.weekly') }}" class="weekly-toolbar">
             <div>
-                <label for="week_start">Minggu Mulai</label>
-                <input id="week_start" type="date" name="week_start" value="{{ $weekStart->toDateString() }}">
+                <label for="week_start">Tanggal</label>
+                <input id="week_start" type="date" name="week_start" value="{{ $selectedDate ?? $weekStart->toDateString() }}">
             </div>
             @if (! in_array($role, ['kajur', 'wali_kelas', 'instruktur'], true))
                 <div>
@@ -249,12 +292,6 @@
                 </select>
             </div>
             <div class="weekly-actions">
-                @if (in_array($role, ['instruktur', 'pembimbing_pkl'], true))
-                    <button type="button" class="btn btn-ghost" id="open-instruktur-note-modal">Tambah Catatan</button>
-                @endif
-                @if ($role === 'kajur')
-                    <button type="button" class="btn btn-ghost" id="open-kajur-note-modal">Tambah Catatan</button>
-                @endif
                 <a class="btn btn-ghost" href="{{ route('reports.weekly') }}">Reset</a>
             </div>
         </form>
@@ -266,17 +303,6 @@
             <div class="kpi-card"><small>Alpha</small><strong>{{ $summary['alpha'] }}</strong></div>
             <div class="kpi-card"><small>Pending</small><strong>{{ $summary['pending'] }}</strong></div>
             <div class="kpi-card"><small>Total</small><strong>{{ $summary['total'] }}</strong></div>
-        </div>
-
-        <div class="panel mb-14">
-            <h4 class="mt-0">Catatan Mingguan Saat Ini</h4>
-            <p style="margin:0 0 8px;">
-                <strong>Instruktur:</strong> {{ ($instructorWeeklyNote ?? null) ?: '-' }}
-                @if (! empty($instructorWeeklyNoteClass))
-                    <small class="text-muted">(kelas: {{ $instructorWeeklyNoteClass }})</small>
-                @endif
-            </p>
-            <p style="margin:0;"><strong>Kajur:</strong> {{ $weeklyValidation?->kajur_note ?: ($weeklyValidation?->note ?: '-') }}</p>
         </div>
 
         @php
@@ -293,231 +319,194 @@
                 <h4 class="mt-0">
                     @if ($selectedStudentId !== '')
                         Daftar Siswa Terpilih
-                    @elseif ($selectedDepartment !== '')
+                    @elseif ($selectedDepartment !== '' && ! in_array($role, ['pembimbing_pkl', 'instruktur'], true))
                         Daftar Siswa (Jurusan {{ $selectedDepartment }})
                     @else
                         Daftar Siswa (Semua Siswa)
                     @endif
                 </h4>
                 <div style="overflow:auto;">
-                    <table class="w-full">
-                        <thead>
-                            <tr>
-                                <th style="width:70px;">No</th>
-                                <th>Nama</th>
-                                <th>NIS</th>
-                                <th>Kelas</th>
-                                <th>Jurusan</th>
-                            </tr>
-                        </thead>
-                        <tbody id="weekly-student-list-body">
-                            @forelse ($displayStudents as $index => $student)
-                                <tr class="weekly-student-row">
-                                    <td>{{ $index + 1 }}</td>
-                                    <td>{{ $student['name'] ?? '-' }}</td>
-                                    <td>{{ $student['nis'] ?? '-' }}</td>
-                                    <td>{{ $student['class_name'] ?? '-' }}</td>
-                                    <td>{{ $student['department_name'] ?? ($selectedDepartment !== '' ? $selectedDepartment : '-') }}</td>
-                                </tr>
-                            @empty
+                    @if (in_array($role, ['pembimbing_pkl', 'instruktur'], true))
+                        <div id="weekly-mentor-autosave-status" style="font-size:12px; color:#6b7280; margin-bottom:8px;"></div>
+                        <table class="w-full weekly-student-table">
+                            <colgroup>
+                                <col class="col-no">
+                                <col class="col-name">
+                                <col class="col-nis">
+                                <col class="col-class">
+                                <col class="col-time">
+                                <col class="col-absen">
+                                <col class="col-note-wide">
+                                <col class="col-note-wide">
+                            </colgroup>
+                            <thead>
                                 <tr>
-                                    <td colspan="5">Belum ada data siswa.</td>
+                                    <th>No</th>
+                                    <th>Nama</th>
+                                    <th>NIS</th>
+                                    <th>Kelas</th>
+                                    <th>Jam</th>
+                                    <th>Absensi</th>
+                                    <th>Catatan Siswa</th>
+                                    <th>Catatan Pembimbing</th>
                                 </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody id="weekly-student-list-body">
+                                @forelse (($guidanceRows ?? collect()) as $index => $row)
+                                    @php
+                                        $isMentor1 = (int) ($row->mentor1_user_id ?? 0) === (int) auth()->id();
+                                        $isMentor2 = (int) ($row->mentor2_user_id ?? 0) === (int) auth()->id();
+                                        $canValidate = $isMentor1 || $isMentor2 || $role === 'instruktur';
+                                        $mentorNoteNow = $isMentor1 ? ($row->mentor1_note ?? '') : ($isMentor2 ? ($row->mentor2_note ?? '') : '');
+                                        $isMentorApproved = $isMentor1
+                                            ? (($row->mentor1_status ?? null) === 'approved')
+                                            : (($isMentor2 ? (($row->mentor2_status ?? null) === 'approved') : false));
+                                        $attendanceLabel = $isMentorApproved ? 'Hadir' : 'Alpha';
+                                    @endphp
+                                    <tr class="weekly-student-row">
+                                        <td>{{ $index + 1 }}</td>
+                                        <td>{{ $row->student?->name ?? '-' }}</td>
+                                        <td>{{ $row->student?->nis ?? '-' }}</td>
+                                        <td>{{ $row->student?->class_name ?? '-' }}</td>
+                                        <td>{{ optional($row->student_submitted_at)->format('H:i:s') ?? '-' }}</td>
+                                        <td>
+                                            @if ($canValidate)
+                                                <form method="POST" action="{{ route('guidance.mentor.validate', $row->id) }}" class="weekly-mentor-auto-save-form">
+                                                    @csrf
+                                                    <input type="hidden" name="approved" value="0">
+                                                    <input type="checkbox" name="approved" value="1" {{ $isMentorApproved ? 'checked' : '' }}>
+                                                    <span style="margin-left:6px;">{{ $attendanceLabel }}</span>
+                                                </form>
+                                            @else
+                                                {{ $attendanceLabel }}
+                                            @endif
+                                        </td>
+                                        <td class="text-cell">{{ $row->student_note }}</td>
+                                        <td>
+                                            @if ($canValidate)
+                                                <form method="POST" action="{{ route('guidance.mentor.validate', $row->id) }}" class="weekly-mentor-auto-save-form">
+                                                    @csrf
+                                                    <input type="hidden" name="approved" value="{{ $isMentorApproved ? '1' : '0' }}">
+                                                    <textarea name="mentor_note" placeholder="Catatan pembimbing">{{ $mentorNoteNow }}</textarea>
+                                                </form>
+                                            @else
+                                                {{ $mentorNoteNow !== '' ? $mentorNoteNow : '-' }}
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr><td colspan="8">Belum ada siswa yang membuat catatan pada minggu/periode ini.</td></tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    @elseif ($role === 'kajur')
+                        <div id="weekly-kajur-autosave-status" style="font-size:12px; color:#6b7280; margin-bottom:8px;"></div>
+                        @php
+                            $mentor1HeaderName = collect($guidanceRows ?? [])->map(fn ($row) => $row->mentor1?->name)->filter()->first();
+                            $mentor2HeaderName = collect($guidanceRows ?? [])->map(fn ($row) => $row->mentor2?->name)->filter()->first();
+                        @endphp
+                        <table class="w-full weekly-student-table">
+                            <colgroup>
+                                <col class="col-no">
+                                <col class="col-name">
+                                <col class="col-nis">
+                                <col class="col-class">
+                                <col class="col-time">
+                                <col class="col-note">
+                                <col class="col-absen">
+                                <col class="col-note">
+                                <col class="col-note">
+                                <col class="col-note-wide">
+                            </colgroup>
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>Nama</th>
+                                    <th>NIS</th>
+                                    <th>Kelas</th>
+                                    <th>Jam</th>
+                                    <th>Catatan Siswa</th>
+                                    <th>Absensi</th>
+                                    <th>{{ $mentor1HeaderName ? 'Catatan Pembimbing 1 - '.$mentor1HeaderName : 'Catatan Pembimbing 1' }}</th>
+                                    <th>{{ $mentor2HeaderName ? 'Catatan Pembimbing 2 - '.$mentor2HeaderName : 'Catatan Pembimbing 2' }}</th>
+                                    <th>Catatan Kajur</th>
+                                </tr>
+                            </thead>
+                            <tbody id="weekly-student-list-body">
+                                @forelse (($guidanceRows ?? collect()) as $index => $row)
+                                    @php
+                                        $isChecked = ($row->final_attendance_status === 'hadir');
+                                    @endphp
+                                    <tr class="weekly-student-row">
+                                        <td>{{ $index + 1 }}</td>
+                                        <td>{{ $row->student?->name ?? '-' }}</td>
+                                        <td>{{ $row->student?->nis ?? '-' }}</td>
+                                        <td>{{ $row->student?->class_name ?? '-' }}</td>
+                                        <td>{{ optional($row->student_submitted_at)->format('H:i:s') ?? '-' }}</td>
+                                        <td class="text-cell">{{ $row->student_note ?: '-' }}</td>
+                                        <td>
+                                            <form method="POST" action="{{ route('guidance.kajur.note', $row->id) }}" class="weekly-kajur-auto-save-form flex items-center gap-8">
+                                                @csrf
+                                                <input type="hidden" name="approved" value="0">
+                                                <input type="checkbox" name="approved" value="1" {{ $isChecked ? 'checked' : '' }}>
+                                            </form>
+                                        </td>
+                                        <td class="text-cell">{{ $row->mentor1_note ?: '-' }}</td>
+                                        <td class="text-cell">{{ $row->mentor2_note ?: '-' }}</td>
+                                        <td>
+                                            <form method="POST" action="{{ route('guidance.kajur.note', $row->id) }}" class="weekly-kajur-auto-save-form">
+                                                @csrf
+                                                <textarea name="kajur_note" placeholder="Catatan Kajur">{{ $row->kajur_note ?? '' }}</textarea>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr><td colspan="10">Belum ada siswa yang membuat catatan pada minggu/periode ini.</td></tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    @else
+                        <table class="w-full weekly-student-table">
+                            <thead>
+                                <tr>
+                                    <th style="width:70px;">No</th>
+                                    <th>Nama</th>
+                                    <th>NIS</th>
+                                    <th>Kelas</th>
+                                    <th>Jurusan</th>
+                                </tr>
+                            </thead>
+                            <tbody id="weekly-student-list-body">
+                                @forelse ($displayStudents as $index => $student)
+                                    <tr class="weekly-student-row">
+                                        <td>{{ $index + 1 }}</td>
+                                        <td>{{ $student['name'] ?? '-' }}</td>
+                                        <td>{{ $student['nis'] ?? '-' }}</td>
+                                        <td>{{ $student['class_name'] ?? '-' }}</td>
+                                        <td>{{ $student['department_name'] ?? ($selectedDepartment !== '' ? $selectedDepartment : '-') }}</td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="5">Belum ada data siswa.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    @endif
                 </div>
-                <div id="weekly-student-pagination" class="mini-pagination" style="display:none;"></div>
+                <div id="weekly-student-pagination" class="mini-pagination" style="display:none;">
+                    <span id="weekly-student-pagination-info" class="mini-pagination-info"></span>
+                </div>
             </div>
         @endif
 
-        @if (in_array($role, ['instruktur', 'pembimbing_pkl', 'kajur', 'superadmin'], true))
-            <div class="weekly-grid {{ in_array($role, ['instruktur', 'kajur'], true) ? 'single' : '' }}">
-                @if (in_array($role, ['instruktur', 'pembimbing_pkl', 'superadmin'], true))
-                    @if (in_array($role, ['instruktur', 'pembimbing_pkl'], true))
-                        <div class="panel">
-                            <h4 class="mt-0">{{ $role === 'pembimbing_pkl' ? 'Catatan Mingguan Pembimbing Sekolah' : 'Catatan Mingguan Instruktur' }}</h4>
-                            @if ($weeklyValidation?->instruktur_note)
-                                <small class="text-muted">Catatan terakhir: {{ $weeklyValidation->instruktur_note }}</small>
-                            @else
-                                <small class="text-muted">{{ $role === 'pembimbing_pkl' ? 'Belum ada catatan pembimbing sekolah minggu ini.' : 'Belum ada catatan instruktur minggu ini.' }}</small>
-                            @endif
-                        </div>
-                    @else
-                    <form method="POST" action="{{ route('reports.weekly.note') }}" class="panel">
-                        @csrf
-                        <h4 class="mt-0">Catatan Mingguan Instruktur</h4>
-                        <input type="hidden" name="week_start" value="{{ $weekStart->toDateString() }}">
-                        <input type="hidden" name="jurusan" value="{{ $selectedDepartment }}">
-                        <input type="hidden" name="kelas" value="{{ $selectedClass }}">
-                        @if ($role === 'superadmin')
-                            <input type="hidden" name="note_role" value="instruktur">
-                        @endif
-                        <textarea name="note" rows="3" placeholder="Catatan mingguan instruktur (wajib)" required>{{ old('note') }}</textarea>
-                        @if ($weeklyValidation?->instruktur_note)
-                            <small class="text-muted">Catatan terakhir: {{ $weeklyValidation->instruktur_note }}</small>
-                        @endif
-                        <button type="submit" class="btn btn-ghost">Simpan Catatan Instruktur</button>
-                    </form>
-                    @endif
-                @endif
-
-                @if (in_array($role, ['kajur', 'superadmin'], true))
-                    @if ($role === 'kajur')
-                        <div class="panel">
-                            <h4 class="mt-0">Catatan Mingguan Kajur</h4>
-                            <div style="margin-bottom:8px;">
-                                <strong>Catatan Instruktur:</strong>
-                                <div style="margin-top:4px; color:#7c2d12;">
-                                    {{ ($instructorWeeklyNote ?? null) ?: 'Belum ada catatan instruktur minggu ini.' }}
-                                    @if (! empty($instructorWeeklyNoteClass))
-                                        <small class="text-muted">(kelas: {{ $instructorWeeklyNoteClass }})</small>
-                                    @endif
-                                </div>
-                            </div>
-                            @if ($weeklyValidation?->kajur_note)
-                                <small class="text-muted">Catatan terakhir: {{ $weeklyValidation->kajur_note }}</small>
-                            @else
-                                <small class="text-muted">Belum ada catatan kajur minggu ini.</small>
-                            @endif
-                        </div>
-                    @else
-                        <form method="POST" action="{{ route('reports.weekly.note') }}" class="panel">
-                            @csrf
-                            <h4 class="mt-0">Catatan Mingguan Kajur</h4>
-                            <input type="hidden" name="week_start" value="{{ $weekStart->toDateString() }}">
-                            <input type="hidden" name="jurusan" value="{{ $selectedDepartment }}">
-                            <input type="hidden" name="kelas" value="{{ $selectedClass }}">
-                            @if ($role === 'superadmin')
-                                <input type="hidden" name="note_role" value="kajur">
-                            @endif
-                            <textarea name="note" rows="3" placeholder="Catatan mingguan kajur (wajib)" required>{{ old('note') }}</textarea>
-                            @if ($weeklyValidation?->kajur_note)
-                                <small class="text-muted">Catatan terakhir: {{ $weeklyValidation->kajur_note }}</small>
-                            @endif
-                            <button type="submit" class="btn btn-ghost">Simpan Catatan Kajur</button>
-                        </form>
-                    @endif
-                @endif
-
-            </div>
-        @endif
-    </div>
-
-    @if (in_array($role, ['instruktur', 'pembimbing_pkl'], true))
-        <div class="weekly-modal-backdrop" id="instruktur-note-modal">
-            <div class="weekly-modal">
-                <h4>{{ $role === 'pembimbing_pkl' ? 'Catatan Mingguan Pembimbing Sekolah' : 'Tambah Catatan Mingguan Instruktur' }}</h4>
-                <form method="POST" action="{{ route('reports.weekly.note') }}">
-                    @csrf
-                    <input type="hidden" name="week_start" value="{{ $weekStart->toDateString() }}">
-                    <input type="hidden" name="jurusan" value="{{ $selectedDepartment }}">
-                    <input type="hidden" name="kelas" value="{{ $selectedClass }}">
-                    <textarea name="note" rows="5" placeholder="{{ $role === 'pembimbing_pkl' ? 'Tulis catatan mingguan pembimbing sekolah' : 'Tulis catatan mingguan instruktur' }}" required>{{ old('note', $weeklyValidation?->instruktur_note) }}</textarea>
-                    <div class="weekly-modal-actions">
-                        @if (!empty($weeklyValidation?->instruktur_note))
-                            <button
-                                type="submit"
-                                class="btn btn-danger js-weekly-note-delete"
-                                formaction="{{ route('reports.weekly.note.delete') }}"
-                                formnovalidate>
-                                Hapus Catatan
-                            </button>
-                        @endif
-                        <button type="button" class="btn" id="close-instruktur-note-modal">Batal</button>
-                        <button type="submit" class="btn btn-ghost">Simpan Perubahan</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    @endif
-
-    @if ($role === 'kajur')
-        <div class="weekly-modal-backdrop" id="kajur-note-modal">
-            <div class="weekly-modal">
-                <h4>Tambah Catatan Mingguan Kajur</h4>
-                <form method="POST" action="{{ route('reports.weekly.note') }}">
-                    @csrf
-                    <input type="hidden" name="week_start" value="{{ $weekStart->toDateString() }}">
-                    <input type="hidden" name="jurusan" value="{{ $selectedDepartment }}">
-                    <input type="hidden" name="kelas" value="{{ $selectedClass }}">
-                    <input type="hidden" name="note_role" value="kajur">
-                    <textarea name="note" rows="5" placeholder="Tulis catatan mingguan kajur" required>{{ old('note', $weeklyValidation?->kajur_note) }}</textarea>
-                    <div class="weekly-modal-actions">
-                        @if (!empty($weeklyValidation?->kajur_note))
-                            <button
-                                type="submit"
-                                class="btn btn-danger js-weekly-note-delete"
-                                formaction="{{ route('reports.weekly.note.delete') }}"
-                                formnovalidate>
-                                Hapus Catatan
-                            </button>
-                        @endif
-                        <button type="button" class="btn" id="close-kajur-note-modal">Batal</button>
-                        <button type="submit" class="btn btn-ghost">Simpan Perubahan</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    @endif
-
-    <div class="card mt-14" style="margin-top:24px;">
-        <div class="flex items-center justify-between wrap gap-10 mb-10">
-            <h3 class="mt-0" style="margin-bottom:0;">Riwayat Validasi Mingguan</h3>
-            <form method="GET" action="{{ route('reports.weekly') }}" class="flex items-center gap-8">
-                <input type="hidden" name="week_start" value="{{ $weekStart->toDateString() }}">
-                <input type="hidden" name="jurusan" value="{{ $selectedDepartment }}">
-                <input type="hidden" name="kelas" value="{{ $selectedClass }}">
-                <input type="hidden" name="siswa" value="{{ $selectedStudent }}">
-                <label for="history_per_page" style="margin:0;">Tampilkan</label>
-                <select id="history_per_page" name="history_per_page">
-                    @foreach (($historyPerPageOptions ?? [10, 20, 50, 100]) as $opt)
-                        <option value="{{ $opt }}" {{ (int) ($historyPerPage ?? 10) === (int) $opt ? 'selected' : '' }}>{{ $opt }}</option>
-                    @endforeach
-                </select>
-            </form>
-        </div>
-        <div class="table-wrap">
-            <table class="w-full">
-                <thead>
-                    <tr>
-                        <th>Minggu</th>
-                        <th>Jurusan</th>
-                        <th>Kelas</th>
-                        <th>Status</th>
-                        <th>Validator</th>
-                        <th>Waktu</th>
-                        <th>Catatan Pembimbing</th>
-                        <th>Catatan Kajur</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse (($validationHistory ?? collect()) as $row)
-                        <tr>
-                            <td>{{ optional($row->week_start)->format('Y-m-d') }} s/d {{ optional($row->week_end)->format('Y-m-d') }}</td>
-                            <td>{{ $row->department_name ?: '-' }}</td>
-                            <td>{{ $row->class_name ?: '-' }}</td>
-                            <td>{{ $formatStatus($row->status) }}</td>
-                            <td>{{ $row->approverKajur?->name ?? $row->validator?->name ?? '-' }}</td>
-                            <td>{{ optional($row->validated_at)->format('Y-m-d H:i:s') ?? '-' }}</td>
-                            <td>{{ $row->instruktur_note ?: '-' }}</td>
-                            <td>{{ $row->kajur_note ?: ($row->note ?: '-') }}</td>
-                        </tr>
-                    @empty
-                        <tr><td colspan="8" style="text-align:center;">Belum ada riwayat validasi.</td></tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-        @if (! empty($validationHistory) && method_exists($validationHistory, 'links'))
-            <div class="mt-10">{{ $validationHistory->links() }}</div>
-        @endif
     </div>
 
     <script>
         (function () {
             const rows = Array.from(document.querySelectorAll('.weekly-student-row'));
             const pagination = document.getElementById('weekly-student-pagination');
+            const paginationInfo = document.getElementById('weekly-student-pagination-info');
             const perPage = 10;
             if (!pagination || rows.length <= perPage) {
                 return;
@@ -532,6 +521,12 @@
                 rows.forEach((row, idx) => {
                     row.style.display = idx >= start && idx < end ? '' : 'none';
                 });
+
+                if (paginationInfo) {
+                    const from = start + 1;
+                    const to = Math.min(end, rows.length);
+                    paginationInfo.textContent = `Menampilkan ${from}-${to} dari ${rows.length} data`;
+                }
             }
 
             function createButton(label, page, isActive = false, disabled = false) {
@@ -549,7 +544,11 @@
             }
 
             function renderPagination() {
+                const infoNode = paginationInfo;
                 pagination.innerHTML = '';
+                if (infoNode) {
+                    pagination.appendChild(infoNode);
+                }
                 pagination.style.display = 'flex';
                 pagination.appendChild(createButton('Prev', Math.max(1, currentPage - 1), false, currentPage === 1));
                 for (let i = 1; i <= totalPages; i++) {
@@ -600,63 +599,103 @@
         })();
 
         (function () {
-            document.querySelectorAll('.js-weekly-note-delete').forEach((btn) => {
-                btn.addEventListener('click', async (event) => {
-                    event.preventDefault();
-                    const form = btn.closest('form');
-                    const confirmed = await window.AppDialog.confirm('Hapus catatan minggu ini?');
-                    if (!confirmed || !form) return;
-                    form.action = btn.getAttribute('formaction');
-                    form.submit();
-                });
-            });
-        })();
+            const statusEl = document.getElementById('weekly-mentor-autosave-status');
+            const forms = Array.from(document.querySelectorAll('.weekly-mentor-auto-save-form'));
+            if (forms.length === 0) return;
 
-        (function () {
-            const openBtn = document.getElementById('open-instruktur-note-modal');
-            const closeBtn = document.getElementById('close-instruktur-note-modal');
-            const modal = document.getElementById('instruktur-note-modal');
-            if (!openBtn || !closeBtn || !modal) return;
+            const setStatus = (text, color = '#6b7280') => {
+                if (!statusEl) return;
+                statusEl.textContent = text;
+                statusEl.style.color = color;
+            };
 
-            function openModal() {
-                modal.classList.add('show');
-            }
+            forms.forEach((form) => {
+                let timer = null;
+                const scheduleSave = (delay = 500, savingText = 'Menyimpan catatan...') => {
+                    if (timer) clearTimeout(timer);
+                    setStatus(savingText);
 
-            function closeModal() {
-                modal.classList.remove('show');
-            }
+                    timer = window.setTimeout(async () => {
+                        try {
+                            const response = await fetch(form.action, {
+                                method: 'POST',
+                                body: new FormData(form),
+                                headers: {
+                                    'X-Requested-With': 'XMLHttpRequest',
+                                    'Accept': 'application/json'
+                                }
+                            });
 
-            openBtn.addEventListener('click', openModal);
-            closeBtn.addEventListener('click', closeModal);
-            modal.addEventListener('click', function (event) {
-                if (event.target === modal) {
-                    closeModal();
+                            if (!response.ok) throw new Error(String(response.status || 'save_failed'));
+                            setStatus('Catatan tersimpan otomatis.');
+                        } catch (e) {
+                            const code = e && e.message ? ` (HTTP ${e.message})` : '';
+                            setStatus(`Gagal menyimpan catatan. Coba lagi.${code}`, '#b91c1c');
+                        }
+                    }, delay);
+                };
+
+                const input = form.querySelector('[name="mentor_note"]');
+                if (input) {
+                    input.addEventListener('input', () => scheduleSave(500, 'Menyimpan catatan...'));
+                }
+
+                const approvedInput = form.querySelector('input[name="approved"][value="1"]');
+                if (approvedInput) {
+                    approvedInput.addEventListener('change', () => scheduleSave(150, 'Menyimpan validasi absensi...'));
                 }
             });
         })();
 
         (function () {
-            const openBtn = document.getElementById('open-kajur-note-modal');
-            const closeBtn = document.getElementById('close-kajur-note-modal');
-            const modal = document.getElementById('kajur-note-modal');
-            if (!closeBtn || !modal) return;
+            const statusEl = document.getElementById('weekly-kajur-autosave-status');
+            const forms = Array.from(document.querySelectorAll('.weekly-kajur-auto-save-form'));
+            if (forms.length === 0) return;
 
-            function openModal() {
-                modal.classList.add('show');
-            }
+            const setStatus = (text, color = '#6b7280') => {
+                if (!statusEl) return;
+                statusEl.textContent = text;
+                statusEl.style.color = color;
+            };
 
-            function closeModal() {
-                modal.classList.remove('show');
-            }
+            forms.forEach((form) => {
+                const noteInput = form.querySelector('[name="kajur_note"]');
+                const approvedInput = form.querySelector('input[name="approved"][value="1"]');
+                let timer = null;
 
-            if (openBtn) openBtn.addEventListener('click', openModal);
-            closeBtn.addEventListener('click', closeModal);
-            modal.addEventListener('click', function (event) {
-                if (event.target === modal) {
-                    closeModal();
+                const scheduleSave = (delay = 500) => {
+                    if (timer) clearTimeout(timer);
+                    setStatus('Menyimpan catatan...');
+
+                    timer = window.setTimeout(async () => {
+                        try {
+                            const response = await fetch(form.action, {
+                                method: 'POST',
+                                body: new FormData(form),
+                                headers: {
+                                    'X-Requested-With': 'XMLHttpRequest',
+                                    'Accept': 'application/json'
+                                }
+                            });
+
+                            if (!response.ok) throw new Error(String(response.status || 'save_failed'));
+                            setStatus('Catatan kajur tersimpan otomatis.');
+                        } catch (e) {
+                            const code = e && e.message ? ` (HTTP ${e.message})` : '';
+                            setStatus(`Gagal menyimpan catatan kajur. Coba lagi.${code}`, '#b91c1c');
+                        }
+                    }, delay);
+                };
+
+                if (noteInput) {
+                    noteInput.addEventListener('input', () => scheduleSave(500));
+                }
+                if (approvedInput) {
+                    approvedInput.addEventListener('change', () => scheduleSave(150));
                 }
             });
         })();
+
     </script>
 @endsection
 

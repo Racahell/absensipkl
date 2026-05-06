@@ -191,7 +191,7 @@ class DatabaseSeeder extends Seeder
             ['name' => 'Laporan Shared Real', 'url' => '/fitur-shared/laporan-grafik'],
         ];
 
-        $roles = ['superadmin', 'admin_sekolah', 'siswa', 'pembimbing_pkl', 'instruktur', 'kajur', 'wali_kelas', 'kesiswaan', 'kepsek'];
+        $roles = ['superadmin', 'admin_sekolah', 'siswa', 'pembimbing_pkl', 'instruktur', 'kajur', 'wali_kelas', 'kesiswaan', 'kepsek', 'wakil_kepsek'];
 
         foreach ($menus as $menuItem) {
             $menu = Menu::updateOrCreate(

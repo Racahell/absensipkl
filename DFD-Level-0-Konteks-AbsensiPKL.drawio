@@ -1,0 +1,46 @@
+﻿<mxfile host="app.diagrams.net" modified="2026-05-03T11:20:00.000Z" agent="Codex" version="24.7.17">
+  <diagram id="dfd0ctx" name="DFD Level 0 - Konteks">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <mxCell id="sys" value="Sistem Absensi &amp; Monitoring PKL" style="ellipse;html=1;strokeWidth=2;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="620" y="420" width="260" height="180" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="en1" value="Siswa" style="shape=rectangle;html=1;strokeWidth=2;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="680" y="180" width="140" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="en2" value="Pembimbing PKL" style="shape=rectangle;html=1;strokeWidth=2;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="260" y="420" width="160" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="en3" value="Instruktur" style="shape=rectangle;html=1;strokeWidth=2;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="1060" y="420" width="150" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="en4" value="Kajur" style="shape=rectangle;html=1;strokeWidth=2;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="300" y="700" width="130" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="en5" value="Admin Sekolah" style="shape=rectangle;html=1;strokeWidth=2;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="930" y="700" width="170" height="70" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="a1" value="data login; check-in/check-out; input laporan harian; pengajuan izin/sakit" style="endArrow=classic;html=1;strokeWidth=1.8;whiteSpace=wrap;" edge="1" parent="1" source="en1" target="sys"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="a2" value="status absensi; status validasi laporan/izin; notifikasi; riwayat absensi" style="endArrow=classic;html=1;strokeWidth=1.8;whiteSpace=wrap;" edge="1" parent="1" source="sys" target="en1"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="b1" value="data login; verifikasi absensi; validasi laporan; validasi pengajuan; input catatan" style="endArrow=classic;html=1;strokeWidth=1.8;whiteSpace=wrap;" edge="1" parent="1" source="en2" target="sys"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="b2" value="daftar validasi pending; detail siswa; hasil pengolahan; rekap bimbingan" style="endArrow=classic;html=1;strokeWidth=1.8;whiteSpace=wrap;" edge="1" parent="1" source="sys" target="en2"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="c1" value="data login; tinjauan validasi lanjutan; update status; input catatan instruktur" style="endArrow=classic;html=1;strokeWidth=1.8;whiteSpace=wrap;" edge="1" parent="1" source="en3" target="sys"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="c2" value="antrian validasi tahap instruktur; status proses; laporan monitoring" style="endArrow=classic;html=1;strokeWidth=1.8;whiteSpace=wrap;" edge="1" parent="1" source="sys" target="en3"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="d1" value="data login; validasi akhir; approve weekly report; input catatan kajur" style="endArrow=classic;html=1;strokeWidth=1.8;whiteSpace=wrap;" edge="1" parent="1" source="en4" target="sys"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d2" value="rekap jurusan; status final validasi; laporan mingguan; notifikasi tindak lanjut" style="endArrow=classic;html=1;strokeWidth=1.8;whiteSpace=wrap;" edge="1" parent="1" source="sys" target="en4"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="e1" value="data login; input/update user; input/update master data; pengaturan sistem; import/export" style="endArrow=classic;html=1;strokeWidth=1.8;whiteSpace=wrap;" edge="1" parent="1" source="en5" target="sys"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e2" value="hasil pengelolaan data; status proses; audit log; laporan rekap; notifikasi sistem" style="endArrow=classic;html=1;strokeWidth=1.8;whiteSpace=wrap;" edge="1" parent="1" source="sys" target="en5"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

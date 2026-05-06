@@ -956,8 +956,8 @@ class ChatbotMatcher
     {
         $id = match ($role) {
             'siswa' => 'Siswa',
-            'pembimbing_pkl' => 'Pembimbing Sekolah',
-            'instruktur' => 'Instruktur',
+            'pembimbing_pkl' => 'Instruktur PKL',
+            'instruktur' => 'Pembimbing',
             'kajur' => 'Kajur',
             'wali_kelas' => 'Wali Kelas',
             'kesiswaan' => 'Kesiswaan',
@@ -969,8 +969,8 @@ class ChatbotMatcher
 
         $en = match ($role) {
             'siswa' => 'Student',
-            'pembimbing_pkl' => 'School Mentor',
-            'instruktur' => 'Field Mentor',
+            'pembimbing_pkl' => 'Internship Instructor',
+            'instruktur' => 'School Mentor',
             'kajur' => 'Department Head',
             'wali_kelas' => 'Homeroom Teacher',
             'kesiswaan' => 'Student Affairs',

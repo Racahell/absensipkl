@@ -25,28 +25,46 @@
             border: 1px solid #ea580c;
             background: #ea580c;
             color: #fff;
-            padding: 8px 12px;
+            padding: 0 12px;
+            height: 40px;
             border-radius: 10px;
             cursor: pointer;
             font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
         .btn-ui-light {
             border: 1px solid #fdba74;
             background: #fff7ed;
             color: #9a3412;
-            padding: 8px 12px;
+            padding: 0 12px;
+            height: 40px;
             border-radius: 10px;
             cursor: pointer;
             font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
         .tab-link {
             text-decoration: none;
-            padding: 8px 12px;
+            padding: 0 12px;
+            height: 40px;
             border-radius: 999px;
             border: 1px solid #fdba74;
             color: #9a3412;
             background: #fff7ed;
             font-size: 13px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .bulk-action-btn {
+            height: 40px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
         .tab-link.active {
             background: #ea580c;
@@ -198,16 +216,10 @@
         </div>
     </div>
 
-    <datalist id="class-options-list">
-        @foreach (($classOptions ?? []) as $classOption)
-            <option value="{{ $classOption }}"></option>
-        @endforeach
-    </datalist>
-    <datalist id="department-options-list">
-        @foreach (($departmentOptions ?? []) as $departmentOption)
-            <option value="{{ $departmentOption }}"></option>
-        @endforeach
-    </datalist>
+    @php
+        $departmentOptions = $departmentOptions ?? collect();
+        $classOptions = $classOptions ?? collect();
+    @endphp
 
     <div class="card">
         <div class="flex items-center justify-between wrap gap-10 mb-10">
@@ -388,12 +400,25 @@
                     <input class="input-ui" name="nuptk" id="detail-nuptk" placeholder="NUPTK (opsional)">
                 </div>
                 <div>
-                    <label for="detail-class-name">Kelas (khusus siswa/wali kelas)</label>
-                    <input class="input-ui" name="class_name" id="detail-class-name" list="class-options-list" placeholder="Kelas (khusus siswa/wali kelas)">
+                    <label for="detail-class-name">Kelas (opsional untuk semua role)</label>
+                    <select class="select-ui" name="class_name" id="detail-class-name">
+                        <option value="">Pilih Kelas</option>
+                        @foreach ($classOptions as $classOption)
+                            <option value="{{ $classOption->name }}" data-department="{{ strtolower((string) ($classOption->department?->name ?? '')) }}">{{ $classOption->name }}</option>
+                        @endforeach
+                    </select>
                 </div>
                 <div>
                     <label for="detail-department-name">Jurusan (contoh: RPL)</label>
-                    <input class="input-ui" name="department_name" id="detail-department-name" list="department-options-list" placeholder="Jurusan (contoh: RPL)" {{ $isKajur ? 'readonly' : '' }}>
+                    <select class="select-ui" name="department_name" id="detail-department-name" {{ $isKajur ? 'disabled' : '' }}>
+                        <option value="">Pilih Jurusan</option>
+                        @foreach ($departmentOptions as $departmentOption)
+                            <option value="{{ $departmentOption->name }}">{{ $departmentOption->name }}</option>
+                        @endforeach
+                    </select>
+                    @if ($isKajur)
+                        <input type="hidden" name="department_name" id="detail-department-name-hidden" value="{{ $actorDepartmentName ?? '' }}">
+                    @endif
                 </div>
                 <div>
                     <label for="detail-email">Email</label>
@@ -411,14 +436,11 @@
                         @endforeach
                     </select>
                 </div>
-                <div>
-                    <label for="detail-password">Password baru (opsional)</label>
-                    <input class="input-ui" id="detail-password" name="password" type="password" placeholder="Password baru (opsional)">
-                </div>
                 <div class="flex gap-8 wrap" style="justify-content:flex-end;">
-                    <button class="btn-success" type="submit">Edit</button>
+                    <button class="btn-success" type="submit" name="reset_password" value="0">Edit</button>
                     <button type="button" class="btn-danger" id="detail-delete-btn">Delete</button>
                     <button type="button" class="btn-ui-light close-modal">Batal</button>
+                    <button class="btn-ui" type="submit" id="detail-reset-password-btn" name="reset_password" value="1">Reset Password</button>
                 </div>
             </form>
         </div>
@@ -450,8 +472,18 @@
                 <input type="hidden" name="role" value="siswa">
                 <input class="input-ui" name="name" placeholder="Nama Siswa" value="{{ old('role') === 'siswa' ? old('name') : '' }}" required>
                 <input class="input-ui" name="nis" placeholder="NIS" value="{{ old('role') === 'siswa' ? old('nis') : '' }}" required>
-                <input class="input-ui" name="class_name" list="class-options-list" placeholder="Kelas (contoh: XII RPL 1)" value="{{ old('role') === 'siswa' ? old('class_name') : '' }}">
-                <input class="input-ui" name="department_name" list="department-options-list" placeholder="Jurusan (contoh: RPL)" value="{{ old('role') === 'siswa' ? old('department_name') : '' }}">
+                <select class="select-ui" name="class_name" id="create-student-class-name">
+                    <option value="">Pilih Kelas</option>
+                    @foreach ($classOptions as $classOption)
+                        <option value="{{ $classOption->name }}" data-department="{{ strtolower((string) ($classOption->department?->name ?? '')) }}" {{ old('role') === 'siswa' && old('class_name') === $classOption->name ? 'selected' : '' }}>{{ $classOption->name }}</option>
+                    @endforeach
+                </select>
+                <select class="select-ui" name="department_name" id="create-student-department-name">
+                    <option value="">Pilih Jurusan</option>
+                    @foreach ($departmentOptions as $departmentOption)
+                        <option value="{{ $departmentOption->name }}" {{ old('role') === 'siswa' && old('department_name') === $departmentOption->name ? 'selected' : '' }}>{{ $departmentOption->name }}</option>
+                    @endforeach
+                </select>
                 <input class="input-ui" name="email" type="email" placeholder="Email" value="{{ old('role') === 'siswa' ? old('email') : '' }}" required>
                 <input class="input-ui" name="phone" placeholder="No WA (opsional)" value="{{ old('role') === 'siswa' ? old('phone') : '' }}">
                 <input class="input-ui" value="Role: siswa (otomatis)" readonly>
@@ -486,11 +518,21 @@
                 <input type="hidden" name="form_context" value="create_staff">
                 <input class="input-ui" name="name" placeholder="Nama Guru/Staff" value="{{ old('role') !== 'siswa' ? old('name') : '' }}" required>
                 <input class="input-ui" name="nuptk" placeholder="NUPTK (opsional)" value="{{ old('role') !== 'siswa' ? old('nuptk') : '' }}">
-                <input class="input-ui" name="class_name" list="class-options-list" placeholder="Kelas Binaan (khusus wali kelas)" value="{{ old('role') !== 'siswa' ? old('class_name') : '' }}">
+                <select class="select-ui" name="class_name" id="create-staff-class-name">
+                    <option value="">Pilih Kelas</option>
+                    @foreach ($classOptions as $classOption)
+                        <option value="{{ $classOption->name }}" data-department="{{ strtolower((string) ($classOption->department?->name ?? '')) }}" {{ old('role') !== 'siswa' && old('class_name') === $classOption->name ? 'selected' : '' }}>{{ $classOption->name }}</option>
+                    @endforeach
+                </select>
                 @if ($isKajur)
                     <input class="input-ui" name="department_name" value="{{ $actorDepartmentName ?? '' }}" readonly>
                 @else
-                    <input class="input-ui" name="department_name" list="department-options-list" placeholder="Jurusan (opsional)" value="{{ old('role') !== 'siswa' ? old('department_name') : '' }}">
+                    <select class="select-ui" name="department_name" id="create-staff-department-name">
+                        <option value="">Pilih Jurusan</option>
+                        @foreach ($departmentOptions as $departmentOption)
+                            <option value="{{ $departmentOption->name }}" {{ old('role') !== 'siswa' && old('department_name') === $departmentOption->name ? 'selected' : '' }}>{{ $departmentOption->name }}</option>
+                        @endforeach
+                    </select>
                 @endif
                 <input class="input-ui" name="email" type="email" placeholder="Email" value="{{ old('role') !== 'siswa' ? old('email') : '' }}" required>
                 <input class="input-ui" name="phone" placeholder="No WA (opsional)" value="{{ old('role') !== 'siswa' ? old('phone') : '' }}">
@@ -520,6 +562,7 @@
                     confirmRestore: 'Are you sure you want to restore selected users?',
                     confirmForceDelete: 'Are you sure you want to permanently delete selected users?',
                     confirmDeleteOne: 'Are you sure you want to delete user',
+                    confirmResetPassword: 'Reset this user password to 12345678? The user will be required to change password on next login.',
                 }
                 : {
                     processing: 'Memproses...',
@@ -529,6 +572,7 @@
                     confirmRestore: 'Yakin restore user yang dipilih?',
                     confirmForceDelete: 'Yakin delete permanent user yang dipilih?',
                     confirmDeleteOne: 'Yakin ingin menghapus user',
+                    confirmResetPassword: 'Reset password user ini ke 12345678? User akan wajib ganti password saat login berikutnya.',
                 };
 
             const detailModal = document.getElementById('user-detail-modal');
@@ -555,8 +599,10 @@
             const bulkSelectedIds = document.getElementById('bulk-selected-ids');
             const bulkActionButtons = Array.from(document.querySelectorAll('.bulk-action-btn'));
             const perPageSelect = document.getElementById('per-page-select');
+            const emptySearchRow = document.getElementById('empty-search-row');
 
             const deleteBtn = document.getElementById('detail-delete-btn');
+            const detailResetPasswordBtn = document.getElementById('detail-reset-password-btn');
 
             let activeUser = null;
 
@@ -607,6 +653,10 @@
                     document.getElementById('detail-nuptk').value = activeUser.nuptk === '-' ? '' : activeUser.nuptk;
                     document.getElementById('detail-class-name').value = activeUser.className === '-' ? '' : activeUser.className;
                     document.getElementById('detail-department-name').value = activeUser.departmentName === '-' ? '' : activeUser.departmentName;
+                    const detailDepartmentHidden = document.getElementById('detail-department-name-hidden');
+                    if (detailDepartmentHidden) {
+                        detailDepartmentHidden.value = activeUser.departmentName === '-' ? '' : activeUser.departmentName;
+                    }
                     document.getElementById('detail-email').value = activeUser.email;
                     document.getElementById('detail-phone').value = activeUser.phone === '-' ? '' : activeUser.phone;
 
@@ -651,8 +701,17 @@
                 });
             }
 
+            if (detailResetPasswordBtn) {
+                detailResetPasswordBtn.addEventListener('click', function (event) {
+                    const confirmed = window.confirm(uiText.confirmResetPassword);
+                    if (!confirmed) {
+                        event.preventDefault();
+                    }
+                });
+            }
+
             function getVisibleUserRows() {
-                return userRows;
+                return userRows.filter((row) => row.style.display !== 'none');
             }
 
             function syncBulkSelectionUI() {
@@ -741,7 +800,32 @@
 
             if (searchInput) {
                 searchInput.addEventListener('input', function () {
-                    submitUsersFilter(650);
+                    const keyword = (searchInput.value || '').trim().toLowerCase();
+                    let visibleCount = 0;
+
+                    userRows.forEach((row) => {
+                        const haystack = [
+                            row.dataset.name || '',
+                            row.dataset.nis || '',
+                            row.dataset.nuptk || '',
+                            row.dataset.email || '',
+                            row.dataset.role || '',
+                            row.dataset.className || '',
+                            row.dataset.departmentName || '',
+                        ].join(' ').toLowerCase();
+
+                        const match = keyword === '' || haystack.includes(keyword);
+                        row.style.display = match ? '' : 'none';
+                        if (match) {
+                            visibleCount++;
+                        }
+                    });
+
+                    if (emptySearchRow) {
+                        emptySearchRow.style.display = visibleCount === 0 ? '' : 'none';
+                    }
+
+                    syncBulkSelectionUI();
                 });
             }
             if (roleFilter) {
@@ -754,6 +838,63 @@
                     submitUsersFilter(0);
                 });
             }
+
+            function bindDepartmentClassFilter(departmentSelectorId, classSelectorId) {
+                const departmentEl = document.getElementById(departmentSelectorId);
+                const classEl = document.getElementById(classSelectorId);
+                if (!departmentEl || !classEl) return;
+
+                const original = Array.from(classEl.options).map((opt) => ({
+                    value: opt.value,
+                    label: opt.textContent,
+                    dept: (opt.dataset.department || '').toLowerCase(),
+                    selected: opt.selected,
+                }));
+
+                const rerender = () => {
+                    const selectedDept = (departmentEl.value || '').toLowerCase();
+                    const previous = classEl.value;
+                    classEl.innerHTML = '';
+
+                    original.forEach((item) => {
+                        if (item.value === '') {
+                            const o = document.createElement('option');
+                            o.value = '';
+                            o.textContent = item.label || '-';
+                            classEl.appendChild(o);
+                            return;
+                        }
+
+                        if (selectedDept !== '' && item.dept !== '' && item.dept !== selectedDept) {
+                            return;
+                        }
+
+                        const o = document.createElement('option');
+                        o.value = item.value;
+                        o.textContent = item.label || item.value;
+                        o.dataset.department = item.dept;
+                        classEl.appendChild(o);
+                    });
+
+                    if (Array.from(classEl.options).some((o) => o.value === previous)) {
+                        classEl.value = previous;
+                    }
+                };
+
+                departmentEl.addEventListener('change', () => {
+                    rerender();
+                    if ((departmentEl.value || '') === '') return;
+                    const selectedClass = classEl.options[classEl.selectedIndex];
+                    if (selectedClass && selectedClass.value && (selectedClass.dataset.department || '').toLowerCase() !== (departmentEl.value || '').toLowerCase()) {
+                        classEl.value = '';
+                    }
+                });
+                rerender();
+            }
+
+            bindDepartmentClassFilter('detail-department-name', 'detail-class-name');
+            bindDepartmentClassFilter('create-student-department-name', 'create-student-class-name');
+            bindDepartmentClassFilter('create-staff-department-name', 'create-staff-class-name');
             syncBulkSelectionUI();
 
             @if ($errors->any() && old('form_context') === 'create_student')

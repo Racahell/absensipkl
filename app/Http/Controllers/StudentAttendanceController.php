@@ -105,6 +105,7 @@ class StudentAttendanceController extends Controller
         try {
             DB::transaction(function () use ($user, $validated, $request, $now, $resolvedLocation, $existing): void {
                 $checkInIp = $request->ip();
+                $checkInDevice = $this->resolveDeviceLabel((string) $request->userAgent());
                 $data = [
                     'user_id' => $user->id,
                     'pkl_location_id' => null,
@@ -113,6 +114,7 @@ class StudentAttendanceController extends Controller
                     'check_in_latitude' => $validated['latitude'],
                     'check_in_longitude' => $validated['longitude'],
                     'check_in_ip' => $checkInIp,
+                    'check_in_device' => $checkInDevice,
                     'check_in_location_label' => $resolvedLocation['label'],
                     'check_in_location_address' => $resolvedLocation['address'],
                     'check_in_selfie_path' => 'no-photo',
@@ -198,11 +200,11 @@ class StudentAttendanceController extends Controller
         $validated = $request->validate([
             'latitude' => ['required', 'numeric', 'between:-90,90'],
             'longitude' => ['required', 'numeric', 'between:-180,180'],
-            'check_out_summary' => ['required', 'string', 'max:1000'],
             'plan_work' => ['required', 'string', 'max:1000'],
             'actual_work' => ['required', 'string', 'max:1000'],
             'assigned_task' => ['nullable', 'string', 'max:1000'],
             'field_issue' => ['nullable', 'string', 'max:1000'],
+            'remember_note' => ['nullable', 'string', 'max:1000'],
             'request_token' => ['required', 'string', 'min:10', 'max:100'],
         ]);
 
@@ -244,9 +246,10 @@ class StudentAttendanceController extends Controller
                 'check_out_latitude' => $validated['latitude'],
                 'check_out_longitude' => $validated['longitude'],
                 'check_out_ip' => $request->ip(),
+                'check_out_device' => $this->resolveDeviceLabel((string) $request->userAgent()),
                 'check_out_location_label' => $resolvedLocation['label'],
                 'check_out_location_address' => $resolvedLocation['address'],
-                'check_out_summary' => $validated['check_out_summary'],
+                'check_out_summary' => null,
                 'check_out_request_token' => $validated['request_token'],
                 'status' => 'pending',
                 'validation_status' => 'pending',
@@ -268,6 +271,7 @@ class StudentAttendanceController extends Controller
                     'assigned_task' => $validated['assigned_task'] ?? null,
                     'special_assignment' => $validated['assigned_task'] ?? null,
                     'field_issue' => $validated['field_issue'] ?? null,
+                    'remember_note' => $validated['remember_note'] ?? null,
                     'evidence_path' => $lockedAttendance->report?->evidence_path,
                     'review_status' => 'pending_pembimbing',
                     'review_sla_due_at' => WorkflowState::defaultSlaDueAt(),
@@ -343,5 +347,45 @@ class StudentAttendanceController extends Controller
         }
 
         return array_values(array_unique($items));
+    }
+
+    private function resolveDeviceLabel(string $userAgent): string
+    {
+        $ua = strtolower(trim($userAgent));
+        if ($ua === '') {
+            return 'Unknown Device';
+        }
+
+        $device = 'Desktop';
+        if (str_contains($ua, 'iphone')) {
+            $device = 'iPhone';
+        } elseif (str_contains($ua, 'ipad')) {
+            $device = 'iPad';
+        } elseif (str_contains($ua, 'android')) {
+            $device = str_contains($ua, 'mobile') ? 'Android Phone' : 'Android Tablet';
+        } elseif (str_contains($ua, 'windows phone')) {
+            $device = 'Windows Phone';
+        } elseif (str_contains($ua, 'macintosh')) {
+            $device = 'Mac';
+        } elseif (str_contains($ua, 'windows')) {
+            $device = 'Windows PC';
+        } elseif (str_contains($ua, 'linux')) {
+            $device = 'Linux PC';
+        }
+
+        $browser = 'Browser';
+        if (str_contains($ua, 'edg/')) {
+            $browser = 'Edge';
+        } elseif (str_contains($ua, 'opr/') || str_contains($ua, 'opera')) {
+            $browser = 'Opera';
+        } elseif (str_contains($ua, 'chrome/')) {
+            $browser = 'Chrome';
+        } elseif (str_contains($ua, 'firefox/')) {
+            $browser = 'Firefox';
+        } elseif (str_contains($ua, 'safari/') && ! str_contains($ua, 'chrome/')) {
+            $browser = 'Safari';
+        }
+
+        return $device.' - '.$browser;
     }
 }

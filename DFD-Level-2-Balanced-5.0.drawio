@@ -1,0 +1,60 @@
+﻿<mxfile host="app.diagrams.net" modified="2026-05-03T13:20:00.000Z" agent="Codex" version="24.7.17">
+  <diagram id="dfd2balanced" name="DFD Level 2 - Turunan 5.0 Validasi Berjenjang">
+    <mxGraphModel dx="1500" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1200">
+      <root>
+        <mxCell id="0"/><mxCell id="1" parent="0"/>
+
+        <mxCell id="ext1" value="Pembimbing PKL" style="shape=rectangle;strokeWidth=2;" vertex="1" parent="1"><mxGeometry x="40" y="120" width="170" height="60" as="geometry"/></mxCell>
+        <mxCell id="ext2" value="Instruktur" style="shape=rectangle;strokeWidth=2;" vertex="1" parent="1"><mxGeometry x="40" y="220" width="150" height="60" as="geometry"/></mxCell>
+        <mxCell id="ext3" value="Kajur" style="shape=rectangle;strokeWidth=2;" vertex="1" parent="1"><mxGeometry x="40" y="320" width="120" height="60" as="geometry"/></mxCell>
+        <mxCell id="ext4" value="Siswa" style="shape=rectangle;strokeWidth=2;" vertex="1" parent="1"><mxGeometry x="1380" y="220" width="120" height="60" as="geometry"/></mxCell>
+
+        <mxCell id="p1" value="5.1 Ambil Data Validasi Pending" style="ellipse;strokeWidth=2;" vertex="1" parent="1"><mxGeometry x="300" y="90" width="240" height="100" as="geometry"/></mxCell>
+        <mxCell id="p2" value="5.2 Validasi Tahap Pembimbing" style="ellipse;strokeWidth=2;" vertex="1" parent="1"><mxGeometry x="580" y="90" width="240" height="100" as="geometry"/></mxCell>
+        <mxCell id="p3" value="5.3 Validasi Tahap Instruktur" style="ellipse;strokeWidth=2;" vertex="1" parent="1"><mxGeometry x="860" y="90" width="240" height="100" as="geometry"/></mxCell>
+        <mxCell id="p4" value="5.4 Validasi Tahap Kajur (Final)" style="ellipse;strokeWidth=2;" vertex="1" parent="1"><mxGeometry x="1140" y="90" width="260" height="100" as="geometry"/></mxCell>
+
+        <mxCell id="p5" value="5.5 Simpan Catatan Validasi" style="ellipse;strokeWidth=2;" vertex="1" parent="1"><mxGeometry x="580" y="260" width="240" height="100" as="geometry"/></mxCell>
+        <mxCell id="p6" value="5.6 Update Status Validasi" style="ellipse;strokeWidth=2;" vertex="1" parent="1"><mxGeometry x="860" y="260" width="240" height="100" as="geometry"/></mxCell>
+        <mxCell id="p7" value="5.7 Kirim Hasil Validasi" style="ellipse;strokeWidth=2;" vertex="1" parent="1"><mxGeometry x="1140" y="260" width="220" height="100" as="geometry"/></mxCell>
+
+        <mxCell id="d1" value="D1 Attendances" style="shape=partialRectangle;strokeWidth=2;" vertex="1" parent="1"><mxGeometry x="320" y="450" width="180" height="50" as="geometry"/></mxCell>
+        <mxCell id="d2" value="D2 Daily Reports" style="shape=partialRectangle;strokeWidth=2;" vertex="1" parent="1"><mxGeometry x="540" y="450" width="180" height="50" as="geometry"/></mxCell>
+        <mxCell id="d3" value="D3 Leave Requests" style="shape=partialRectangle;strokeWidth=2;" vertex="1" parent="1"><mxGeometry x="760" y="450" width="180" height="50" as="geometry"/></mxCell>
+        <mxCell id="d4" value="D4 Validation Logs" style="shape=partialRectangle;strokeWidth=2;" vertex="1" parent="1"><mxGeometry x="980" y="450" width="190" height="50" as="geometry"/></mxCell>
+
+        <mxCell id="f1" value="permintaan validasi" style="endArrow=classic;strokeWidth=1.5;" edge="1" parent="1" source="ext1" target="p1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f2" value="permintaan validasi" style="endArrow=classic;strokeWidth=1.5;" edge="1" parent="1" source="ext2" target="p1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f3" value="permintaan validasi" style="endArrow=classic;strokeWidth=1.5;" edge="1" parent="1" source="ext3" target="p1"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="f4" value="data pending" style="endArrow=classic;strokeWidth=1.5;" edge="1" parent="1" source="p1" target="p2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f5" value="hasil tahap pembimbing" style="endArrow=classic;strokeWidth=1.5;" edge="1" parent="1" source="p2" target="p3"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f6" value="hasil tahap instruktur" style="endArrow=classic;strokeWidth=1.5;" edge="1" parent="1" source="p3" target="p4"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="f7" value="catatan validasi" style="endArrow=classic;strokeWidth=1.5;" edge="1" parent="1" source="p2" target="p5"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f8" value="catatan validasi" style="endArrow=classic;strokeWidth=1.5;" edge="1" parent="1" source="p3" target="p5"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f9" value="catatan validasi" style="endArrow=classic;strokeWidth=1.5;" edge="1" parent="1" source="p4" target="p5"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="f10" value="status validasi" style="endArrow=classic;strokeWidth=1.5;" edge="1" parent="1" source="p2" target="p6"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f11" value="status validasi" style="endArrow=classic;strokeWidth=1.5;" edge="1" parent="1" source="p3" target="p6"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f12" value="status final" style="endArrow=classic;strokeWidth=1.5;" edge="1" parent="1" source="p4" target="p6"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="f13" value="hasil validasi" style="endArrow=classic;strokeWidth=1.5;" edge="1" parent="1" source="p6" target="p7"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f14" value="status validasi + catatan" style="endArrow=classic;strokeWidth=1.5;" edge="1" parent="1" source="p7" target="ext4"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="f15" value="baca data pending" style="endArrow=classic;strokeWidth=1.4;" edge="1" parent="1" source="d1" target="p1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f16" value="baca data pending" style="endArrow=classic;strokeWidth=1.4;" edge="1" parent="1" source="d2" target="p1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f17" value="baca data pending" style="endArrow=classic;strokeWidth=1.4;" edge="1" parent="1" source="d3" target="p1"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="f18" value="simpan catatan" style="endArrow=classic;strokeWidth=1.4;" edge="1" parent="1" source="p5" target="d2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f19" value="simpan catatan" style="endArrow=classic;strokeWidth=1.4;" edge="1" parent="1" source="p5" target="d3"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="f20" value="update status" style="endArrow=classic;strokeWidth=1.4;" edge="1" parent="1" source="p6" target="d1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f21" value="update status" style="endArrow=classic;strokeWidth=1.4;" edge="1" parent="1" source="p6" target="d2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f22" value="update status" style="endArrow=classic;strokeWidth=1.4;" edge="1" parent="1" source="p6" target="d3"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="f23" value="tulis log validasi" style="endArrow=classic;strokeWidth=1.4;" edge="1" parent="1" source="p7" target="d4"><mxGeometry relative="1" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

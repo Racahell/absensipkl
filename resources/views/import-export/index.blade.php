@@ -2,6 +2,20 @@
 
 @section('content')
     <style>
+        .card a:hover {
+            color: var(--accent);
+        }
+
+        .card button:hover {
+            filter: brightness(0.95);
+        }
+
+        .card input:hover,
+        .card select:hover,
+        .card textarea:hover {
+            border-color: var(--accent);
+        }
+
         .import-progress-container {
             position: relative;
             width: 100%;
@@ -9,7 +23,7 @@
             background: linear-gradient(180deg, #ffedd5 0%, #fed7aa 100%);
             border-radius: 10px;
             overflow: hidden;
-            box-shadow: inset 0 0 0 1px #fdba74, 0 6px 12px rgba(154, 52, 18, 0.15);
+            box-shadow: inset 0 0 0 1px var(--line), 0 6px 12px color-mix(in srgb, var(--accent-text) 18%, transparent);
             box-sizing: border-box;
         }
 
@@ -102,17 +116,17 @@
     </style>
 
     <div class="card" style="margin-bottom:14px;">
-        <h3 style="margin-top:0; color:#9a3412;">Import & Export User</h3>
-        <p style="color:#7c2d12; margin:0 0 6px;">Total Siswa: <strong>{{ $usersCount['siswa'] ?? 0 }}</strong></p>
-        <p style="color:#7c2d12; margin:0 0 6px;">Total Guru: <strong>{{ $usersCount['instruktur'] ?? 0 }}</strong></p>
-        <p style="color:#7c2d12; margin:0;">Total Kepsek: <strong>{{ $usersCount['kepsek'] ?? 0 }}</strong></p>
+        <h3 style="margin-top:0; color:var(--accent-text);">Import User</h3>
+        <p style="color:var(--accent-text); margin:0 0 6px;">Total Siswa: <strong>{{ $usersCount['siswa'] ?? 0 }}</strong></p>
+        <p style="color:var(--accent-text); margin:0 0 6px;">Total Guru: <strong>{{ $usersCount['instruktur'] ?? 0 }}</strong></p>
+        <p style="color:var(--accent-text); margin:0;">Total Kepsek: <strong>{{ $usersCount['kepsek'] ?? 0 }}</strong></p>
         @if(session('success'))<div style="padding:10px; border:1px solid #86efac; background:#f0fdf4; color:#166534; border-radius:8px; margin-bottom:10px;">{{ session('success') }}</div>@endif
         @if(session('error'))<div style="padding:10px; border:1px solid #fca5a5; background:#fef2f2; color:#991b1b; border-radius:8px; margin-bottom:10px;">{{ session('error') }}</div>@endif
     </div>
 
     <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:14px;">
         <div class="card">
-            <h4 style="margin-top:0; color:#9a3412;">Data User (Siswa/Guru/Kepsek)</h4>
+            <h4 style="margin-top:0; color:var(--accent-text);">Data User</h4>
             <a href="{{ route('import-export.users.export') }}">Download Template CSV User</a>
             <form id="import-users-form" method="POST" action="{{ route('import-export.users.import') }}" enctype="multipart/form-data" style="margin-top:10px; display:grid; gap:8px;">
                 @csrf
@@ -136,12 +150,72 @@
             <small>
                 Gunakan file template dari tombol di atas.
                 Header wajib dan urutan kolom harus sama:
-                `nis_nuptk;name;email;password;class_or_position`.
-                Kolom terakhir (`class_or_position`) dipakai untuk menentukan role otomatis:
-                isi `guru` => role `instruktur`, isi `kepsek` => role `kepsek`,
-                selain itu dianggap kelas siswa (contoh: `RPL XII`, `AKL XI`, `BDP XII`).
-                `department_name` akan diisi otomatis dari kelas siswa.
+                `nis_nuptk;nama;email;password;role;jurusan;kelas;tempat_pkl`.
             </small>
+        </div>
+        <div class="card">
+            <h4 style="margin-top:0; color:var(--accent-text);">Panduan Import User</h4>
+            <div class="text-muted" style="font-size:13px; line-height:1.5;">
+                <p style="margin:0 0 8px;">Import user untuk menambah akun massal via Excel/CSV.</p>
+                <p style="margin:0 0 6px;"><strong>Role didukung:</strong> siswa, admin_sekolah, pembimbing_pkl, instruktur, kajur, wali_kelas, kesiswaan, kepsek, wakil_kepsek.</p>
+                <p style="margin:0 0 6px;"><strong>Format delimiter:</strong> delimiter harus konsisten <code>;</code> (titik koma), bukan campur <code>,</code> (koma).</p>
+                <p style="margin:0 0 6px;"><strong>Catatan:</strong> wajib membuat data master jurusan (department) dan kelas terlebih dahulu sebelum import user.</p>
+                <p style="margin:0 0 6px;"><strong>Aturan identitas:</strong> email valid/asli → non-siswa NUPTK opsional. Email tidak valid/asli → NIS/NUPTK wajib.</p>
+                <p style="margin:0 0 4px;"><strong>Wajib per role:</strong></p>
+                <ul style="margin:0; padding-left:18px;">
+                    <li><code>siswa</code>: semua kolom wajib diisi terkhusus untuk role siswa.</li>
+                    <li><code>admin_sekolah</code>: email + password.</li>
+                    <li><code>pembimbing_pkl</code>: email + password + jurusan (NUPTK opsional jika email valid).<br>NUPTK wajib diisi jika email tidak asli.</li>
+                    <li><code>instruktur</code>: email asli + password + tempat PKL.</li>
+                    <li><code>kajur</code>: email + password + jurusan.</li>
+                    <li><code>wali_kelas</code>: email + password + jurusan + kelas.</li>
+                    <li><code>kesiswaan</code>, <code>kepsek</code>, <code>wakil_kepsek</code>: email + password.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card">
+            <h4 style="margin-top:0; color:var(--accent-text);">Export User</h4>
+            <form method="GET" action="{{ route('import-export.users.export-data') }}" class="grid gap-8">
+                <div>
+                    <label>Role</label>
+                    <select name="role">
+                        <option value="">Semua Role</option>
+                        @foreach (($exportRoles ?? []) as $role)
+                            <option value="{{ $role }}">{{ $role }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label>Jurusan</label>
+                    <select name="jurusan">
+                        <option value="">Semua Jurusan</option>
+                        @foreach (($exportDepartments ?? []) as $dept)
+                            <option value="{{ $dept }}">{{ $dept }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label>Kelas</label>
+                    <select name="kelas">
+                        <option value="">Semua Kelas</option>
+                        @foreach (($exportClasses ?? []) as $cls)
+                            <option value="{{ $cls }}">{{ $cls }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label>Tempat PKL</label>
+                    <select name="tempat_pkl">
+                        <option value="">Semua Tempat PKL</option>
+                        @foreach (($exportLocations ?? []) as $loc)
+                            <option value="{{ $loc }}">{{ $loc }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <button type="submit">Export User CSV</button>
+                <small class="text-muted">Password tidak ikut diexport.</small>
+            </form>
         </div>
 
     </div>

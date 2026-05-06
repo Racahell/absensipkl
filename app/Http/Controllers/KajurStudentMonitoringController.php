@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Attendance;
+use App\Models\Department;
 use App\Models\MentorRoleScope;
+use App\Models\SchoolClass;
 use App\Models\StudentMentorAssignment;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -29,9 +31,27 @@ class KajurStudentMonitoringController extends Controller
         if (! in_array($perPage, $allowedPerPage, true)) {
             $perPage = 20;
         }
+        $departmentClassNames = collect();
+        if ($departmentName !== '') {
+            $departmentClassNames = SchoolClass::query()
+                ->select('school_classes.name')
+                ->join('departments', 'departments.id', '=', 'school_classes.department_id')
+                ->where('departments.name', $departmentName)
+                ->pluck('school_classes.name')
+                ->filter(fn ($name) => trim((string) $name) !== '')
+                ->values();
+        }
+
         $students = User::query()
             ->where('role', 'siswa')
-            ->when($departmentName !== '', fn ($query) => $query->where('department_name', $departmentName))
+            ->when($departmentName !== '', function ($query) use ($departmentName, $departmentClassNames): void {
+                $query->where(function ($scope) use ($departmentName, $departmentClassNames): void {
+                    $scope->where('department_name', $departmentName);
+                    if ($departmentClassNames->isNotEmpty()) {
+                        $scope->orWhereIn('class_name', $departmentClassNames->all());
+                    }
+                });
+            })
             ->when($departmentName === '', fn ($query) => $query->whereRaw('1 = 0'))
             ->when($className !== '', fn ($query) => $query->where('class_name', $className))
             ->when($q !== '', function ($query) use ($q): void {
@@ -62,24 +82,15 @@ class KajurStudentMonitoringController extends Controller
                 ->orderBy('name')
                 ->get(['id', 'name']);
 
-        return view('kajur.students.index', [
-            'title' => 'Monitoring Absensi Siswa Jurusan',
-            'students' => $students,
-            'schoolMentors' => $schoolMentors,
-            'instructors' => $instructors,
-            'assignmentMap' => $this->buildAssignmentMap($students->getCollection()->pluck('id')->all()),
-            'departmentName' => $departmentName,
-            'departmentOptions' => User::query()
-                ->where('role', 'siswa')
-                ->whereNotNull('department_name')
-                ->where('department_name', '!=', '')
-                ->orderBy('department_name')
-                ->distinct()
-                ->pluck('department_name')
-                ->values(),
-            'classOptions' => $departmentName === ''
-                ? collect()
-                : User::query()
+        $classOptions = collect();
+        if ($departmentName !== '') {
+            $classOptions = $departmentClassNames
+                ->sort()
+                ->values();
+
+            // Fallback for legacy rows not yet mapped to master class relation.
+            if ($classOptions->isEmpty()) {
+                $classOptions = User::query()
                     ->where('role', 'siswa')
                     ->where('department_name', $departmentName)
                     ->whereNotNull('class_name')
@@ -87,7 +98,22 @@ class KajurStudentMonitoringController extends Controller
                     ->orderBy('class_name')
                     ->distinct()
                     ->pluck('class_name')
-                    ->values(),
+                    ->values();
+            }
+        }
+
+        return view('kajur.students.index', [
+            'title' => 'Monitoring Absensi Siswa Jurusan',
+            'students' => $students,
+            'schoolMentors' => $schoolMentors,
+            'instructors' => $instructors,
+            'assignmentMap' => $this->buildAssignmentMap($students->getCollection()->pluck('id')->all()),
+            'departmentName' => $departmentName,
+            'departmentOptions' => Department::query()
+                ->orderBy('name')
+                ->pluck('name')
+                ->values(),
+            'classOptions' => $classOptions,
             'filters' => ['q' => $q, 'class_name' => $className, 'per_page' => $perPage],
             'perPageOptions' => $allowedPerPage,
         ]);
@@ -326,7 +352,7 @@ class KajurStudentMonitoringController extends Controller
     {
         $actor = $request->user();
         $role = (string) ($actor->role ?? '');
-        if (in_array($role, ['kajur', 'instruktur', 'pembimbing_pkl'], true)) {
+        if (in_array($role, ['kajur', 'instruktur', 'pembimbing_pkl', 'pembimbing'], true)) {
             return trim((string) ($actor->department_name ?? ''));
         }
         if (in_array($role, ['admin_sekolah', 'superadmin'], true)) {

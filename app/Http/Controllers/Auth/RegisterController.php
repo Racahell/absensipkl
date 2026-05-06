@@ -22,9 +22,9 @@ class RegisterController extends Controller
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'nis' => ['required', 'string', 'max:50', Rule::unique('users', 'nis')],
+            'nis' => ['required', 'string', 'max:50', 'regex:/^[0-9]+$/', Rule::unique('users', 'nis')],
             'email' => ['required', 'email', Rule::unique('users', 'email')],
-            'phone' => ['nullable', 'string', 'max:30', Rule::unique('users', 'phone')],
+            'phone' => ['nullable', 'string', 'max:30', 'regex:/^[0-9]+$/', Rule::unique('users', 'phone')],
             'password' => ['required', 'string', 'min:6', 'confirmed'],
         ]);
 

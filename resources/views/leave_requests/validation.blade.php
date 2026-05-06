@@ -34,10 +34,10 @@
 @section('content')
     <style>
         .validation-table-wrap {
-            border: 1px solid #fed7aa;
+            border: 1px solid var(--line);
             border-radius: 12px;
             overflow: hidden;
-            background: #fff;
+            background: var(--surface);
         }
         .validation-filters {
             display: grid;
@@ -53,14 +53,14 @@
         .validation-filters label {
             font-size: 12px;
             font-weight: 700;
-            color: #9a3412;
+            color: var(--accent-text);
         }
         .validation-filters input,
         .validation-filters select {
             padding: 8px 10px;
-            border: 1px solid #fdba74;
+            border: 1px solid var(--line);
             border-radius: 10px;
-            background: #fff;
+            background: var(--surface);
         }
         .validation-filters .filter-reset {
             align-self: end;
@@ -70,10 +70,10 @@
             display: none;
             margin-top: 10px;
             padding: 10px 12px;
-            border: 1px dashed #fdba74;
+            border: 1px dashed var(--line);
             border-radius: 10px;
-            color: #9a3412;
-            background: #fff7ed;
+            color: var(--accent-text);
+            background: var(--accent-soft);
         }
 
         .validation-table {
@@ -83,14 +83,14 @@
 
         .validation-table th,
         .validation-table td {
-            border-bottom: 1px solid #ffedd5;
+            border-bottom: 1px solid var(--line);
             padding: 10px 12px;
             vertical-align: middle;
         }
 
         .validation-table th {
-            background: #fff7ed;
-            color: #9a3412;
+            background: var(--accent-soft);
+            color: var(--accent-text);
             text-align: left;
             font-weight: 700;
             white-space: nowrap;
@@ -101,13 +101,13 @@
         }
 
         .validation-table .name-cell strong {
-            color: #7c2d12;
+            color: var(--accent-text);
         }
 
         .detail-btn {
-            border: 1px solid #fdba74;
-            background: #fff;
-            color: #9a3412;
+            border: 1px solid var(--line);
+            background: var(--surface);
+            color: var(--accent-text);
             border-radius: 10px;
             padding: 8px 14px;
             font-weight: 700;

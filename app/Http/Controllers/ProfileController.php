@@ -38,7 +38,7 @@ class ProfileController extends Controller
                 Rule::unique('users', 'email')->ignore($user->id),
                 Rule::unique('users', 'pending_email')->ignore($user->id),
             ],
-            'phone' => ['nullable', 'string', 'max:30'],
+            'phone' => ['nullable', 'string', 'max:30', 'regex:/^[0-9]+$/'],
             'photo' => ['nullable', 'image', 'max:4096'],
             'cropped_photo' => ['nullable', 'string'],
         ]);

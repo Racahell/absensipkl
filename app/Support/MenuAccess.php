@@ -13,6 +13,8 @@ class MenuAccess
 
     public static function canAccess(string $role, string $menuKey): bool
     {
+        $role = self::normalizeRole($role);
+
         if (in_array($role, ['superadmin', 'owner'], true)) {
             return true;
         }
@@ -40,6 +42,16 @@ class MenuAccess
         }
 
         return (bool) (self::$cache[$role][$menuKey] ?? false);
+    }
+
+    private static function normalizeRole(string $role): string
+    {
+        return match ($role) {
+            'owner' => 'kepsek',
+            'operator' => 'admin_sekolah',
+            'pembimbing' => 'pembimbing_pkl',
+            default => $role,
+        };
     }
 
     private static function menuTablesReady(): bool

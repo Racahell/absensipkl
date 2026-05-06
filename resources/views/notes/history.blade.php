@@ -153,7 +153,7 @@
     </style>
 
     <div class="card">
-        <h3 class="mt-0">Riwayat Catatan Pembimbing Sekolah, Instruktur, & Kajur</h3>
+        <h3 class="mt-0">Riwayat Catatan Pembimbing Sekolah</h3>
 
         @if ($notes->isEmpty())
             <p>Belum ada catatan validasi.</p>
@@ -167,7 +167,7 @@
                     <label for="notes-filter-category">Kategori</label>
                     <select id="notes-filter-category">
                         <option value="">Semua</option>
-                        <option value="absensi / laporan harian (mingguan)">Absensi / Laporan Harian (Mingguan)</option>
+                        <option value="absensi / laporan harian">Absensi / Laporan Harian</option>
                         <option value="pengajuan izin/sakit">Pengajuan Izin/Sakit</option>
                     </select>
                 </div>

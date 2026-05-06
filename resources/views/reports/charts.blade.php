@@ -19,6 +19,16 @@
             white-space: nowrap;
             min-width: 112px;
         }
+
+        .report-filter-student {
+            min-width: 220px;
+            max-width: 220px;
+        }
+
+        .report-filter-date {
+            min-width: 170px;
+            max-width: 170px;
+        }
     </style>
 
     <div class="card mb-14">
@@ -51,6 +61,25 @@
                     </select>
                 </div>
             @endif
+            <div class="report-filter-student">
+                <label for="siswa">Siswa</label>
+                <select id="siswa" name="siswa">
+                    <option value="">Semua Siswa</option>
+                    @foreach (($studentOptions ?? []) as $student)
+                        <option value="{{ $student['id'] }}" {{ (int) ($selectedStudent ?? 0) === (int) $student['id'] ? 'selected' : '' }}>
+                            {{ $student['name'] }} ({{ $student['nis'] }}){{ ! empty($student['class_name']) ? ' - '.$student['class_name'] : '' }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="report-filter-date">
+                <label for="date_from">Tanggal Dari</label>
+                <input id="date_from" type="date" name="date_from" value="{{ $dateFrom ?? '' }}">
+            </div>
+            <div class="report-filter-date">
+                <label for="date_to">Tanggal Sampai</label>
+                <input id="date_to" type="date" name="date_to" value="{{ $dateTo ?? '' }}">
+            </div>
             <input type="hidden" id="period" name="period" value="{{ $period }}">
             <div>
                 <label for="chart_type">Tipe Diagram</label>
@@ -60,9 +89,9 @@
                     <option value="pie" {{ $chartType === 'pie' ? 'selected' : '' }}>Pie</option>
                 </select>
             </div>
-            <a class="btn btn-ghost" href="{{ route('reports.export.excel', ['period' => $period, 'jurusan' => $selectedDepartment ?? null, 'kelas' => $selectedClass ?? null]) }}">Export Excel</a>
-            <a class="btn btn-ghost" href="{{ route('reports.export.pdf', ['period' => $period, 'jurusan' => $selectedDepartment ?? null, 'kelas' => $selectedClass ?? null]) }}">Export PDF</a>
-            <a class="btn btn-ghost" href="{{ route('reports.print', ['period' => $period, 'jurusan' => $selectedDepartment ?? null, 'kelas' => $selectedClass ?? null]) }}" target="_blank">Print</a>
+            <a class="btn btn-ghost" href="{{ route('reports.export.excel', ['period' => $period, 'jurusan' => $selectedDepartment ?? null, 'kelas' => $selectedClass ?? null, 'siswa' => ($selectedStudent ?? 0) > 0 ? $selectedStudent : null, 'date_from' => ($dateFrom ?? '') !== '' ? $dateFrom : null, 'date_to' => ($dateTo ?? '') !== '' ? $dateTo : null]) }}">Export Excel</a>
+            <a class="btn btn-ghost" href="{{ route('reports.export.pdf', ['period' => $period, 'jurusan' => $selectedDepartment ?? null, 'kelas' => $selectedClass ?? null, 'siswa' => ($selectedStudent ?? 0) > 0 ? $selectedStudent : null, 'date_from' => ($dateFrom ?? '') !== '' ? $dateFrom : null, 'date_to' => ($dateTo ?? '') !== '' ? $dateTo : null]) }}">Export PDF</a>
+            <a class="btn btn-ghost" href="{{ route('reports.print', ['period' => $period, 'jurusan' => $selectedDepartment ?? null, 'kelas' => $selectedClass ?? null, 'siswa' => ($selectedStudent ?? 0) > 0 ? $selectedStudent : null, 'date_from' => ($dateFrom ?? '') !== '' ? $dateFrom : null, 'date_to' => ($dateTo ?? '') !== '' ? $dateTo : null]) }}" target="_blank">Print</a>
         </form>
         @if (! empty($isKesiswaan) && empty($selectedDepartment))
             <div class="alert alert-error mt-10">Pilih jurusan terlebih dahulu untuk menampilkan data.</div>
@@ -182,6 +211,9 @@
             const chartTypeSelect = document.getElementById('chart_type');
             const jurusanSelect = document.getElementById('jurusan');
             const kelasSelect = document.getElementById('kelas');
+            const siswaSelect = document.getElementById('siswa');
+            const dateFromInput = document.getElementById('date_from');
+            const dateToInput = document.getElementById('date_to');
 
             function submitAuto() {
                 form.submit();
@@ -203,6 +235,15 @@
             }
             if (kelasSelect) {
                 kelasSelect.addEventListener('change', submitAuto);
+            }
+            if (siswaSelect) {
+                siswaSelect.addEventListener('change', submitAuto);
+            }
+            if (dateFromInput) {
+                dateFromInput.addEventListener('change', submitAuto);
+            }
+            if (dateToInput) {
+                dateToInput.addEventListener('change', submitAuto);
             }
         })();
     </script>

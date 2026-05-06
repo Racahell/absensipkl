@@ -11,6 +11,7 @@ use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\AttendanceValidationController;
 use App\Http\Controllers\AppSettingController;
 use App\Http\Controllers\ImportExportController;
+use App\Http\Controllers\AcademicMasterController;
 use App\Http\Controllers\KajurStudentMonitoringController;
 use App\Http\Controllers\LeaveRequestController;
 use App\Http\Controllers\LeaveValidationController;
@@ -18,6 +19,7 @@ use App\Http\Controllers\MenuPermissionController;
 use App\Http\Controllers\ReportChartController;
 use App\Http\Controllers\ReportExportController;
 use App\Http\Controllers\StudentAttendanceController;
+use App\Http\Controllers\StudentGuidanceNoteController;
 use App\Http\Controllers\SystemBackupController;
 use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\ValidationNoteHistoryController;
@@ -107,6 +109,7 @@ Route::middleware('auth')->group(function () {
 
 Route::middleware(['auth', 'force.password.reset', 'menu.permission'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard/siswa/calendar-data', [DashboardController::class, 'studentCalendarData'])->name('dashboard.siswa.calendar-data');
     Route::get('/profil', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profil', [ProfileController::class, 'update'])->name('profile.update');
     Route::post('/profil/reset-password-email', [ProfileController::class, 'sendResetPasswordEmail'])->name('profile.password.email');
@@ -120,6 +123,7 @@ Route::middleware(['auth', 'force.password.reset', 'menu.permission'])->group(fu
     Route::get('/dashboard/wali-kelas', [DashboardController::class, 'legacyRedirect'])->middleware('role:wali_kelas');
     Route::get('/dashboard/kesiswaan', [DashboardController::class, 'legacyRedirect'])->middleware('role:kesiswaan');
     Route::get('/dashboard/kepsek', [DashboardController::class, 'legacyRedirect'])->middleware('role:kepsek');
+    Route::get('/dashboard/wakil-kepsek', [DashboardController::class, 'legacyRedirect'])->middleware('role:wakil_kepsek');
 
     Route::get('/absensi', [StudentAttendanceController::class, 'index'])->name('absensi.index');
     Route::get('/absensi/check-in', [StudentAttendanceController::class, 'checkInPage'])->name('absensi.checkin.page');
@@ -129,6 +133,8 @@ Route::middleware(['auth', 'force.password.reset', 'menu.permission'])->group(fu
     Route::get('/pengajuan', [LeaveRequestController::class, 'index'])->name('pengajuan.index');
     Route::post('/pengajuan', [LeaveRequestController::class, 'store'])->name('pengajuan.store');
     Route::get('/riwayat-catatan', [ValidationNoteHistoryController::class, 'index'])->name('catatan.history');
+    Route::get('/catatan-bimbingan', [StudentGuidanceNoteController::class, 'studentIndex'])->name('guidance.student.index');
+    Route::post('/catatan-bimbingan', [StudentGuidanceNoteController::class, 'studentStore'])->name('guidance.student.store');
 
     Route::get('/validasi', [AttendanceValidationController::class, 'index'])->name('validasi.index');
     Route::post('/validasi/{attendance}/approve', [AttendanceValidationController::class, 'approve'])->name('validasi.approve');
@@ -136,6 +142,8 @@ Route::middleware(['auth', 'force.password.reset', 'menu.permission'])->group(fu
     Route::post('/validasi/{attendance}/note', [AttendanceValidationController::class, 'saveNote'])->name('validasi.note');
     Route::post('/validasi/absensi/{attendance}/approve', [AttendanceValidationController::class, 'approve'])->name('validasi.absensi.approve');
     Route::post('/validasi/absensi/{attendance}/reject', [AttendanceValidationController::class, 'reject'])->name('validasi.absensi.reject');
+    Route::get('/validasi/catatan-bimbingan', [StudentGuidanceNoteController::class, 'mentorIndex'])->name('guidance.mentor.index');
+    Route::post('/validasi/catatan-bimbingan/{note}', [StudentGuidanceNoteController::class, 'mentorValidate'])->name('guidance.mentor.validate');
 
     Route::get('/validasi-pengajuan', [LeaveValidationController::class, 'index'])->name('validasi.pengajuan.index');
     Route::post('/validasi-pengajuan/{leaveRequest}/approve', [LeaveValidationController::class, 'approve'])->name('validasi.pengajuan.approve');
@@ -157,6 +165,10 @@ Route::middleware(['auth', 'force.password.reset', 'menu.permission'])->group(fu
     Route::post('/summary-report/note', [WeeklyValidationController::class, 'saveNote'])->name('reports.weekly.note');
     Route::post('/summary-report/note/delete', [WeeklyValidationController::class, 'deleteNote'])->name('reports.weekly.note.delete');
     Route::post('/validasi-mingguan/{weeklyValidation}/approve', [WeeklyValidationController::class, 'approveById'])->name('validasi.mingguan.approve');
+    Route::get('/kajur/catatan-bimbingan', [StudentGuidanceNoteController::class, 'kajurIndex'])->name('guidance.kajur.index');
+    Route::post('/kajur/catatan-bimbingan/{note}/note', [StudentGuidanceNoteController::class, 'kajurNote'])->name('guidance.kajur.note');
+    Route::get('/wakil-kepsek/validasi-kehadiran', [StudentGuidanceNoteController::class, 'wakilIndex'])->name('guidance.wakil.index');
+    Route::post('/wakil-kepsek/validasi-kehadiran/{note}', [StudentGuidanceNoteController::class, 'wakilValidate'])->name('guidance.wakil.validate');
 
     Route::get('/laporan/export/excel', [ReportExportController::class, 'reportExcel'])->name('reports.export.excel');
     Route::get('/laporan/export/pdf', [ReportExportController::class, 'reportPdf'])->name('reports.export.pdf');
@@ -177,11 +189,11 @@ Route::middleware(['auth', 'force.password.reset', 'menu.permission'])->group(fu
     Route::delete('/fitur/manajemen-pengguna/{user}', [UserManagementController::class, 'destroy'])->name('users.destroy');
     Route::post('/fitur/manajemen-pengguna/{id}/restore', [UserManagementController::class, 'restore'])->name('users.restore');
     Route::delete('/fitur/manajemen-pengguna/{id}/force-delete', [UserManagementController::class, 'forceDelete'])
-        ->middleware('role:superadmin')
         ->name('users.force-delete');
 
     Route::get('/fitur/setting-web', [AppSettingController::class, 'index'])->name('fitur.setting-web');
     Route::put('/fitur/setting-web', [AppSettingController::class, 'update'])->name('settings.update');
+    Route::post('/fitur/setting-web/reminder-now', [AppSettingController::class, 'sendGuidanceReminderNow'])->name('settings.reminder-now');
     Route::get('/fitur/lokasi-pkl', [PklLocationController::class, 'index'])->name('fitur.lokasi-pkl');
     Route::get('/fitur/lokasi-pkl/{location}', [PklLocationController::class, 'show'])->name('locations.show');
     Route::post('/fitur/lokasi-pkl', [PklLocationController::class, 'store'])->name('locations.store');
@@ -198,9 +210,22 @@ Route::middleware(['auth', 'force.password.reset', 'menu.permission'])->group(fu
 
     Route::get('/fitur/import-export', [ImportExportController::class, 'index'])->name('fitur.import-export');
     Route::get('/fitur/import-export/users/export', [ImportExportController::class, 'exportUsers'])->name('import-export.users.export');
+    Route::get('/fitur/import-export/users/export-data', [ImportExportController::class, 'exportUsersData'])->name('import-export.users.export-data');
     Route::post('/fitur/import-export/users/import', [ImportExportController::class, 'importUsers'])->name('import-export.users.import');
     Route::post('/fitur/import-export/users/import/init', [ImportExportController::class, 'importUsersInit'])->name('import-export.users.import.init');
     Route::post('/fitur/import-export/users/import/process', [ImportExportController::class, 'importUsersProcess'])->name('import-export.users.import.process');
+
+    Route::get('/fitur/master-akademik', [AcademicMasterController::class, 'index'])->name('fitur.master-akademik');
+    Route::post('/fitur/master-akademik/jurusan', [AcademicMasterController::class, 'storeDepartment'])->name('masters.department.store');
+    Route::put('/fitur/master-akademik/jurusan/{department}', [AcademicMasterController::class, 'updateDepartment'])->name('masters.department.update');
+    Route::delete('/fitur/master-akademik/jurusan/{department}', [AcademicMasterController::class, 'destroyDepartment'])->name('masters.department.destroy');
+    Route::post('/fitur/master-akademik/jurusan/{id}/restore', [AcademicMasterController::class, 'restoreDepartment'])->name('masters.department.restore');
+    Route::delete('/fitur/master-akademik/jurusan/{id}/force-delete', [AcademicMasterController::class, 'forceDeleteDepartment'])->name('masters.department.force-delete');
+    Route::post('/fitur/master-akademik/kelas', [AcademicMasterController::class, 'storeClass'])->name('masters.class.store');
+    Route::put('/fitur/master-akademik/kelas/{class}', [AcademicMasterController::class, 'updateClass'])->name('masters.class.update');
+    Route::delete('/fitur/master-akademik/kelas/{class}', [AcademicMasterController::class, 'destroyClass'])->name('masters.class.destroy');
+    Route::post('/fitur/master-akademik/kelas/{id}/restore', [AcademicMasterController::class, 'restoreClass'])->name('masters.class.restore');
+    Route::delete('/fitur/master-akademik/kelas/{id}/force-delete', [AcademicMasterController::class, 'forceDeleteClass'])->name('masters.class.force-delete');
 
 
     Route::get('/kajur/siswa', [KajurStudentMonitoringController::class, 'index'])->name('kajur.students.index');

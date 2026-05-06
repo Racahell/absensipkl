@@ -39,7 +39,7 @@
                             id="avatar-preview"
                             src="{{ $profilePhotoSrc }}"
                             alt="Foto Profil"
-                            style="width:220px; height:220px; object-fit:cover; border-radius:50%; border:2px solid #fdba74; background:#fff;"
+                            style="width:220px; height:220px; object-fit:cover; border-radius:50%; border:2px solid var(--line); background:var(--surface);"
                         >
                     </div>
                     <div class="flex gap-8 wrap mt-10">
@@ -84,7 +84,7 @@
             </div>
 
             <div class="panel mb-14">
-                <strong style="color:#9a3412;">Reset Password</strong>
+                <strong style="color:var(--accent-text);">Reset Password</strong>
                 <p class="text-muted" style="margin:6px 0 10px;">Reset password dilakukan melalui email akun Anda.</p>
                 <button type="submit" class="btn-ghost" form="reset-password-form">Kirim Link Reset Password Email</button>
             </div>
@@ -101,12 +101,12 @@
         id="camera-modal"
         style="display:none; position:fixed; inset:0; z-index:9998; background:rgba(17,24,39,.65); align-items:center; justify-content:center; padding:14px;"
     >
-        <div style="width:min(860px, 100%); background:#fff; border:1px solid #fdba74; border-radius:14px; padding:14px;">
+        <div style="width:min(860px, 100%); background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px;">
             <div class="flex justify-between items-center mb-10">
-                <strong style="color:#9a3412;">Ambil Foto Dari Kamera</strong>
+                <strong style="color:var(--accent-text);">Ambil Foto Dari Kamera</strong>
                 <button id="camera-close" type="button" class="btn-ghost">Tutup</button>
             </div>
-            <div style="border:1px solid #fdba74; border-radius:12px; background:#fffaf5; padding:8px;">
+            <div style="border:1px solid var(--line); border-radius:12px; background:var(--accent-soft); padding:8px;">
                 <video id="camera-video" autoplay playsinline style="width:100%; border-radius:10px; background:#111827; transform:scaleX(-1);"></video>
             </div>
             <div class="flex gap-8 wrap mt-10" style="justify-content:flex-end;">
@@ -119,12 +119,12 @@
         id="crop-modal"
         style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(17,24,39,.65); align-items:center; justify-content:center; padding:14px;"
     >
-        <div style="width:min(860px, 100%); max-height:92vh; overflow:auto; background:#fff; border:1px solid #fdba74; border-radius:14px; padding:14px;">
+        <div style="width:min(860px, 100%); max-height:92vh; overflow:auto; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px;">
             <div class="flex justify-between items-center mb-10">
-                <strong style="color:#9a3412;">Crop Foto Profil</strong>
+                <strong style="color:var(--accent-text);">Crop Foto Profil</strong>
                 <button id="crop-modal-close" type="button" class="btn-ghost">Tutup</button>
             </div>
-            <div style="min-height:260px; border:1px solid #fdba74; border-radius:12px; background:#fffaf5; padding:8px;">
+            <div style="min-height:260px; border:1px solid var(--line); border-radius:12px; background:var(--accent-soft); padding:8px;">
                 <img id="crop-modal-image" alt="Crop Foto Profil" style="max-width:100%; display:block;">
             </div>
             <div class="flex gap-8 wrap mt-10" style="justify-content:flex-end;">

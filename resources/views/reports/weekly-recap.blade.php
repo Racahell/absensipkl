@@ -147,7 +147,7 @@
         <form method="GET" action="{{ route('reports.weekly.recap') }}" class="weekly-toolbar">
             <div class="weekly-filter-group">
                 <div class="field week-start">
-                    <label for="week_start">Minggu Mulai</label>
+                    <label for="week_start">Tanggal</label>
                     <input id="week_start" type="date" name="week_start" value="{{ $weekStart->toDateString() }}">
                 </div>
                 @if (! in_array($role, ['kajur', 'wali_kelas'], true))
@@ -267,59 +267,6 @@
         </div>
     </div>
 
-    <div class="card mt-14" style="margin-top:24px;">
-        <div class="flex items-center justify-between wrap gap-10 mb-10">
-            <h3 class="mt-0" style="margin-bottom:0;">Riwayat Validasi Mingguan</h3>
-            <form method="GET" action="{{ route('reports.weekly.recap') }}" class="flex items-center gap-8">
-                <input type="hidden" name="week_start" value="{{ $weekStart->toDateString() }}">
-                <input type="hidden" name="jurusan" value="{{ $selectedDepartment }}">
-                <input type="hidden" name="kelas" value="{{ $selectedClass }}">
-                <input type="hidden" name="siswa" value="{{ $selectedStudent }}">
-                <label for="history_per_page" style="margin:0;">Tampilkan</label>
-                <select id="history_per_page" name="history_per_page">
-                    @foreach (($historyPerPageOptions ?? [10, 20, 50, 100]) as $opt)
-                        <option value="{{ $opt }}" {{ (int) ($historyPerPage ?? 10) === (int) $opt ? 'selected' : '' }}>{{ $opt }}</option>
-                    @endforeach
-                </select>
-            </form>
-        </div>
-        <div class="table-wrap">
-            <table class="w-full">
-                <thead>
-                    <tr>
-                        <th>Minggu</th>
-                        <th>Jurusan</th>
-                        <th>Kelas</th>
-                        <th>Status</th>
-                        <th>Validator</th>
-                        <th>Waktu</th>
-                        <th>Catatan Pembimbing</th>
-                        <th>Catatan Kajur</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse (($validationHistory ?? collect()) as $row)
-                        <tr>
-                            <td>{{ optional($row->week_start)->format('Y-m-d') }} s/d {{ optional($row->week_end)->format('Y-m-d') }}</td>
-                            <td>{{ $row->department_name ?: '-' }}</td>
-                            <td>{{ $row->class_name ?: '-' }}</td>
-                            <td>{{ $formatStatus($row->status) }}</td>
-                            <td>{{ $row->approverKajur?->name ?? $row->validator?->name ?? '-' }}</td>
-                            <td>{{ optional($row->validated_at)->format('Y-m-d H:i:s') ?? '-' }}</td>
-                            <td>{{ $row->instruktur_note ?: '-' }}</td>
-                            <td>{{ $row->kajur_note ?: ($row->note ?: '-') }}</td>
-                        </tr>
-                    @empty
-                        <tr><td colspan="8" style="text-align:center;">Belum ada riwayat validasi.</td></tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-        @if (! empty($validationHistory) && method_exists($validationHistory, 'links'))
-            <div class="mt-10">{{ $validationHistory->links() }}</div>
-        @endif
-    </div>
-
     <script>
         (function () {
             const form = document.querySelector('form.weekly-toolbar');
@@ -329,7 +276,6 @@
             const jurusan = form.querySelector('select[name="jurusan"]');
             const kelas = form.querySelector('select[name="kelas"]');
             const siswa = form.querySelector('select[name="siswa"]');
-            const historyPerPage = document.getElementById('history_per_page');
 
             let timer = null;
             function submitAuto(delay = 0) {
@@ -352,10 +298,6 @@
                 });
             }
             if (siswa) siswa.addEventListener('change', () => submitAuto());
-            if (historyPerPage) historyPerPage.addEventListener('change', () => {
-                const historyForm = historyPerPage.closest('form');
-                if (historyForm) historyForm.submit();
-            });
         })();
     </script>
 @endsection

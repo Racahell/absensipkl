@@ -20,10 +20,10 @@
     @endphp
     <style>
         .history-table-wrap {
-            border: 1px solid #fed7aa;
+            border: 1px solid var(--line);
             border-radius: 12px;
             overflow: hidden;
-            background: #fff;
+            background: var(--surface);
         }
 
         .history-table {
@@ -33,15 +33,15 @@
 
         .history-table th,
         .history-table td {
-            border-bottom: 1px solid #ffedd5;
+            border-bottom: 1px solid var(--line);
             padding: 9px 10px;
             text-align: left;
             vertical-align: middle;
         }
 
         .history-table th {
-            background: #fff7ed;
-            color: #9a3412;
+            background: var(--accent-soft);
+            color: var(--accent-text);
             font-weight: 700;
             white-space: nowrap;
         }
@@ -59,31 +59,31 @@
             display: block;
             font-size: 12px;
             font-weight: 700;
-            color: #9a3412;
+            color: var(--accent-text);
             margin-bottom: 6px;
         }
         .history-filters input,
         .history-filters select {
             width: 100%;
             padding: 8px 10px;
-            border: 1px solid #fdba74;
+            border: 1px solid var(--line);
             border-radius: 8px;
-            background: #fff;
+            background: var(--surface);
         }
         .history-empty-filter {
             display: none;
             margin-top: 10px;
             padding: 10px 12px;
-            border: 1px dashed #fdba74;
+            border: 1px dashed var(--line);
             border-radius: 10px;
-            color: #9a3412;
-            background: #fff7ed;
+            color: var(--accent-text);
+            background: var(--accent-soft);
         }
 
         .history-detail-btn {
-            border: 1px solid #fdba74;
-            background: #fff;
-            color: #9a3412;
+            border: 1px solid var(--line);
+            background: var(--surface);
+            color: var(--accent-text);
             border-radius: 10px;
             padding: 7px 12px;
             font-weight: 700;
@@ -109,9 +109,9 @@
             width: min(840px, 100%);
             max-height: 92vh;
             overflow: auto;
-            border: 1px solid #fdba74;
+            border: 1px solid var(--line);
             border-radius: 14px;
-            background: #fff;
+            background: var(--surface);
         }
 
         .history-modal-head {
@@ -119,10 +119,10 @@
             justify-content: space-between;
             align-items: center;
             padding: 12px 14px;
-            border-bottom: 1px solid #fed7aa;
+            border-bottom: 1px solid var(--line);
             position: sticky;
             top: 0;
-            background: #fff7ed;
+            background: var(--accent-soft);
             z-index: 2;
         }
 
@@ -142,19 +142,19 @@
             white-space: nowrap;
         }
         .evidence-dropzone {
-            border: 2px dashed #fdba74;
+            border: 2px dashed var(--line);
             border-radius: 12px;
-            background: #fff7ed;
+            background: var(--accent-soft);
             padding: 14px;
             text-align: center;
-            color: #9a3412;
+            color: var(--accent-text);
             margin: 6px 0 10px;
             cursor: pointer;
             transition: all .2s ease;
         }
         .evidence-dropzone.is-dragover {
-            border-color: #ea580c;
-            background: #ffedd5;
+            border-color: var(--accent);
+            background: color-mix(in srgb, var(--accent-soft) 70%, var(--surface));
         }
         .evidence-dropzone strong {
             display: block;
@@ -164,11 +164,11 @@
         .evidence-thumb {
             width: 100%;
             max-width: 320px;
-            border: 1px solid #fdba74;
+            border: 1px solid var(--line);
             border-radius: 10px;
             cursor: zoom-in;
             display: block;
-            background: #fff;
+            background: var(--surface);
         }
 
         .evidence-viewer {
@@ -189,8 +189,8 @@
         .evidence-viewer-card {
             width: min(1000px, 100%);
             height: min(88vh, 820px);
-            background: #fff;
-            border: 1px solid #fdba74;
+            background: var(--surface);
+            border: 1px solid var(--line);
             border-radius: 12px;
             overflow: hidden;
             display: grid;
@@ -202,8 +202,8 @@
             justify-content: space-between;
             align-items: center;
             padding: 10px 12px;
-            border-bottom: 1px solid #fed7aa;
-            background: #fff7ed;
+            border-bottom: 1px solid var(--line);
+            background: var(--accent-soft);
         }
 
         .evidence-viewer-stage {
@@ -225,10 +225,37 @@
             pointer-events: auto;
             cursor: grab;
         }
+        .leave-form-control {
+            width: 100%;
+            margin: 6px 0 10px;
+            padding: 8px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--surface);
+        }
+        .leave-form-muted {
+            margin: 6px 0 8px;
+            color: var(--accent-text);
+        }
+        .leave-secondary-btn {
+            display: none;
+            padding: 8px 10px;
+            border: 1px solid var(--line);
+            background: var(--surface);
+            color: var(--accent-text);
+            border-radius: 8px;
+        }
+        .leave-primary-btn {
+            padding: 9px 12px;
+            border: 1px solid var(--accent);
+            background: var(--accent);
+            color: #fff;
+            border-radius: 8px;
+        }
     </style>
 
     @if (session('success'))
-        <div class="card" style="border-color:#fdba74; margin-bottom: 16px; background:#fff7ed;">
+        <div class="card" style="border-color:var(--line); margin-bottom: 16px; background:var(--accent-soft);">
             {{ session('success') }}
         </div>
     @endif
@@ -249,19 +276,19 @@
         <form action="{{ route('pengajuan.store') }}" method="POST" enctype="multipart/form-data">
             @csrf
             <label>Tanggal</label>
-            <input type="date" name="request_date" style="width:100%; margin:6px 0 10px; padding:8px; border:1px solid #fdba74; border-radius:8px;" required>
+            <input type="date" name="request_date" class="leave-form-control" required>
 
             <label>Jenis</label>
-            <select name="type" style="width:100%; margin:6px 0 10px; padding:8px; border:1px solid #fdba74; border-radius:8px;">
+            <select name="type" class="leave-form-control">
                 <option value="izin">Izin</option>
                 <option value="sakit">Sakit</option>
             </select>
 
             <label>Alasan</label>
-            <textarea name="reason" rows="3" style="width:100%; margin:6px 0 10px; padding:8px; border:1px solid #fdba74; border-radius:8px;" required></textarea>
+            <textarea name="reason" rows="3" class="leave-form-control" required></textarea>
 
             <label>Bukti (wajib, foto)</label>
-            <p style="margin:6px 0 8px; color:#9a3412;">Upload bukti foto. Bisa drag & drop atau pilih file.</p>
+            <p class="leave-form-muted">Upload bukti foto. Bisa drag & drop atau pilih file.</p>
             <div id="leave-evidence-dropzone" class="evidence-dropzone">
                 <strong>Drag & drop foto di sini</strong>
                 <span>atau klik untuk pilih file</span>
@@ -270,14 +297,14 @@
                 <img
                     id="leave-photo-preview"
                     alt="Preview Bukti Pengajuan"
-                    style="width:100%; max-width:360px; border:1px solid #fdba74; border-radius:10px; display:block;">
+                    style="width:100%; max-width:360px; border:1px solid var(--line); border-radius:10px; display:block;">
             </div>
-            <p id="leave-file-info" style="margin:6px 0 8px; color:#9a3412;">Belum ada file dipilih.</p>
+            <p id="leave-file-info" class="leave-form-muted">Belum ada file dipilih.</p>
             <div class="leave-action-row">
-                <button id="reset-leave-file-btn" type="button" style="display:none; padding:8px 10px; border:1px solid #ea580c; background:#fff; color:#9a3412; border-radius:8px;">
+                <button id="reset-leave-file-btn" type="button" class="leave-secondary-btn">
                     Hapus File
                 </button>
-                <button type="submit" style="padding:9px 12px; border:1px solid #ea580c; background:#ea580c; color:#fff; border-radius:8px;">
+                <button type="submit" class="leave-primary-btn">
                     Kirim Pengajuan
                 </button>
             </div>

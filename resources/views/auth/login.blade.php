@@ -28,17 +28,17 @@
     <link rel="icon" type="image/png" href="{{ asset($faviconPath) }}">
     <style>
         :root {
-            --bg: #f5ede4;
+            --bg: {{ $appProfile['theme_background'] ?? '#f5ede4' }};
             --card: #ffffff;
             --text: #1f2937;
             --muted: #6b7280;
-            --primary: #ea580c;
-            --primary-strong: #c2410c;
-            --border: #fed7aa;
-            --input: #fffaf5;
+            --primary: {{ $appProfile['theme_primary'] ?? '#f97316' }};
+            --primary-strong: color-mix(in srgb, var(--primary) 78%, #000000);
+            --border: {{ $appProfile['theme_primary'] ?? '#f97316' }};
+            --input: color-mix(in srgb, {{ $appProfile['theme_primary'] ?? '#f97316' }} 8%, #ffffff);
             --danger: #b91c1c;
             --success: #166534;
-            --ring: rgba(234, 88, 12, 0.2);
+            --ring: color-mix(in srgb, var(--primary) 22%, transparent);
         }
 
         * { box-sizing: border-box; }
@@ -48,8 +48,8 @@
             min-height: 100vh;
             padding: 24px 22px 26px;
             background:
-                radial-gradient(circle at top right, #ffe9cf 0%, transparent 45%),
-                radial-gradient(circle at left bottom, #fdd9b5 0%, transparent 38%),
+                radial-gradient(circle at top right, color-mix(in srgb, var(--primary) 24%, #ffffff) 0%, transparent 45%),
+                radial-gradient(circle at left bottom, color-mix(in srgb, var(--primary) 16%, #ffffff) 0%, transparent 38%),
                 var(--bg);
             color: var(--text);
             font-family: "Segoe UI", Tahoma, sans-serif;
@@ -108,8 +108,8 @@
         .radio-inputs {
             display: flex;
             border-radius: 10px;
-            background: #fff7ed;
-            border: 1px solid #fdba74;
+            background: color-mix(in srgb, var(--primary) 12%, #ffffff);
+            border: 1px solid var(--border);
             padding: 3px;
             width: 132px;
             height: 40px;
@@ -135,7 +135,7 @@
             border-radius: 8px;
             border: none;
             padding: 0.45rem 0.35rem;
-            color: #9a3412;
+            color: var(--primary);
             font-weight: 700;
             transition: background-color .25s ease, color .25s ease;
             letter-spacing: .04em;
@@ -150,7 +150,7 @@
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            color: #9a3412;
+            color: var(--primary);
             font-size: 13px;
             font-weight: 700;
         }
@@ -208,7 +208,7 @@
             font-size: 34px;
             line-height: 1.05;
             font-weight: 800;
-            color: #7c2d12;
+            color: var(--primary);
             letter-spacing: 0.2px;
             text-transform: uppercase;
         }
@@ -283,14 +283,14 @@
         .verify-box {
             margin-top: 14px;
             border: 1px dashed var(--border);
-            background: #fffaf5;
+            background: var(--input);
             border-radius: 12px;
             padding: 12px;
         }
 
         .verify-note {
             margin: 0 0 10px;
-            color: #9a3412;
+            color: var(--primary);
             font-weight: 600;
             font-size: 15px;
         }
@@ -318,7 +318,7 @@
             font-size: 13px;
         }
 
-        .links a { color: #9a3412; text-decoration: none; }
+        .links a { color: var(--primary); text-decoration: none; }
         .links a:hover { text-decoration: underline; }
 
         .google-btn {
@@ -369,7 +369,7 @@
         .login-dialog {
             width: min(420px, 100%);
             background: #fff;
-            border: 1px solid #fdba74;
+            border: 1px solid var(--border);
             border-radius: 14px;
             box-shadow: 0 16px 36px rgba(124, 45, 18, 0.22);
             overflow: hidden;
@@ -377,9 +377,9 @@
 
         .login-dialog-head {
             padding: 12px 14px;
-            background: #fff7ed;
-            border-bottom: 1px solid #fed7aa;
-            color: #9a3412;
+            background: color-mix(in srgb, var(--primary) 12%, #ffffff);
+            border-bottom: 1px solid var(--border);
+            color: var(--primary);
             font-size: 16px;
             font-weight: 800;
         }
@@ -394,13 +394,13 @@
             display: flex;
             justify-content: flex-end;
             padding: 10px 14px 14px;
-            border-top: 1px solid #fed7aa;
-            background: #fffaf5;
+            border-top: 1px solid var(--border);
+            background: var(--input);
         }
 
         .login-dialog-btn {
-            border: 1px solid #ea580c;
-            background: #ea580c;
+            border: 1px solid var(--primary);
+            background: var(--primary);
             color: #fff;
             border-radius: 10px;
             padding: 8px 12px;
@@ -570,9 +570,6 @@
         <button class="btn" type="submit">Masuk</button>
     </form>
 
-    <div class="links" style="justify-content: flex-end;">
-        <a href="{{ route('password.request') }}">Lupa Password</a>
-    </div>
     @if ($googleOauthReady ?? false)
         <a href="{{ route('auth.google.redirect') }}" class="google-btn">
             <svg class="google-icon" viewBox="0 0 48 48" aria-hidden="true">
@@ -597,8 +594,9 @@
             Login Google belum dikonfigurasi. Isi <code>GOOGLE_CLIENT_ID</code>, <code>GOOGLE_CLIENT_SECRET</code>, dan <code>GOOGLE_REDIRECT_URI</code> di file <code>.env</code>.
         </div>
     @endif
-    <div class="links" style="justify-content: center; margin-top:10px;">
+    <div class="links" style="margin-top:10px;">
         <a href="{{ route('login.otp.email') }}">Login OTP Email</a>
+        <a href="{{ route('password.request') }}">Lupa Password</a>
     </div>
 </div>
 </main>

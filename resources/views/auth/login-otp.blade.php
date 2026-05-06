@@ -5,21 +5,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login OTP | Absensi PKL</title>
     <style>
-        body{margin:0;min-height:100vh;display:grid;place-items:center;background:#f5ede4;font-family:Segoe UI,Tahoma,sans-serif;padding:16px}
-        .card{width:min(420px,96vw);background:#fff;border:1px solid #fdba74;border-radius:14px;padding:18px}
-        h1{margin:0 0 8px;font-size:22px;color:#9a3412}
-        p{margin:0 0 10px;color:#6b7280}
+        :root{
+            --bg: {{ $appProfile['theme_background'] ?? '#f5ede4' }};
+            --surface: #ffffff;
+            --accent: {{ $appProfile['theme_primary'] ?? '#ea580c' }};
+            --line: {{ $appProfile['theme_primary'] ?? '#ea580c' }};
+            --accent-soft: color-mix(in srgb, {{ $appProfile['theme_primary'] ?? '#ea580c' }} 12%, #ffffff);
+            --accent-text: {{ $appProfile['theme_primary'] ?? '#ea580c' }};
+            --text: #1f2937;
+            --muted: #6b7280;
+        }
+        body{margin:0;min-height:100vh;display:grid;place-items:center;background:var(--bg);font-family:Segoe UI,Tahoma,sans-serif;padding:16px;color:var(--text)}
+        .card{width:min(420px,96vw);background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px}
+        h1{margin:0 0 8px;font-size:22px;color:var(--accent-text)}
+        p{margin:0 0 10px;color:var(--muted)}
         label{display:block;margin:10px 0 6px;font-weight:600}
-        input{width:100%;border:1px solid #fdba74;border-radius:8px;padding:10px;box-sizing:border-box}
-        .btn{width:100%;border:1px solid #ea580c;background:#ea580c;color:#fff;border-radius:8px;padding:10px;font-weight:700;cursor:pointer}
-        .btn-ghost{width:100%;border:1px solid #fdba74;background:#fff;color:#9a3412;border-radius:8px;padding:10px;font-weight:700;cursor:pointer}
+        input{width:100%;border:1px solid var(--line);border-radius:8px;padding:10px;box-sizing:border-box}
+        .btn{width:100%;border:1px solid var(--accent);background:var(--accent);color:#fff;border-radius:8px;padding:10px;font-weight:700;cursor:pointer}
+        .btn-ghost{width:100%;border:1px solid var(--line);background:var(--surface);color:var(--accent-text);border-radius:8px;padding:10px;font-weight:700;cursor:pointer}
+        .btn:hover,.btn-ghost:hover{filter:brightness(.97)}
         .row{display:grid;gap:8px}
         .msg{margin:8px 0;padding:10px;border-radius:8px;font-size:14px}
         .ok{border:1px solid #bbf7d0;background:#f0fdf4;color:#166534}
         .err{border:1px solid #fecaca;background:#fff1f2;color:#b91c1c}
-        .step{margin-top:12px;border:1px dashed #fdba74;border-radius:10px;padding:10px}
-        .step-title{margin:0 0 8px;color:#9a3412;font-weight:700;font-size:14px}
-        a{color:#9a3412;text-decoration:none}
+        .step{margin-top:12px;border:1px dashed var(--line);border-radius:10px;padding:10px;background:var(--accent-soft)}
+        .step-title{margin:0 0 8px;color:var(--accent-text);font-weight:700;font-size:14px}
+        a{color:var(--accent-text);text-decoration:none}
     </style>
 </head>
 <body>

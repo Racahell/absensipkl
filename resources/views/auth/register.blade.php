@@ -13,9 +13,9 @@
     <form method="POST" action="{{ route('register.store') }}">
         @csrf
         <label>Nama</label><input name="name" value="{{ old('name') }}" required>
-        <label>NIS</label><input name="nis" value="{{ old('nis') }}" required>
+        <label>NIS</label><input name="nis" value="{{ old('nis') }}" inputmode="numeric" pattern="[0-9]*" required>
         <label>Email</label><input type="email" name="email" value="{{ old('email') }}" required>
-        <label>No WhatsApp</label><input name="phone" value="{{ old('phone') }}" placeholder="62812xxxx">
+        <label>No WhatsApp</label><input name="phone" value="{{ old('phone') }}" inputmode="numeric" pattern="[0-9]*" placeholder="62812xxxx">
         <label>Password</label>
         <div class="password-wrap">
             <input type="password" id="register_password" name="password" required>
@@ -49,6 +49,14 @@
             }
             button.setAttribute('aria-label', isPassword ? 'Sembunyikan password' : 'Tampilkan password');
         });
+    });
+
+    document.querySelectorAll('input[name="nis"], input[name="phone"]').forEach((input) => {
+        const sanitize = () => {
+            input.value = (input.value || '').replace(/\D+/g, '');
+        };
+        input.addEventListener('input', sanitize);
+        input.addEventListener('blur', sanitize);
     });
 </script>
 </body>

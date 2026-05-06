@@ -41,7 +41,7 @@ class ForgotPasswordController extends Controller
     public function sendWhatsappCode(Request $request): RedirectResponse
     {
         $request->validate([
-            'phone' => ['required', 'string', 'max:30'],
+            'phone' => ['required', 'string', 'max:30', 'regex:/^[0-9]+$/'],
         ]);
 
         $phone = (string) $request->input('phone');
@@ -83,7 +83,7 @@ class ForgotPasswordController extends Controller
     public function resetWithWhatsapp(Request $request): RedirectResponse
     {
         $request->validate([
-            'phone' => ['required', 'string', 'max:30'],
+            'phone' => ['required', 'string', 'max:30', 'regex:/^[0-9]+$/'],
             'code' => ['required', 'string', 'max:10'],
             'password' => ['required', 'string', 'min:6', 'confirmed'],
         ]);

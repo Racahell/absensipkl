@@ -10,8 +10,8 @@
         .attendance-tabs {
             display: inline-flex;
             gap: 8px;
-            background: #fff7ed;
-            border: 1px solid #fed7aa;
+            background: var(--accent-soft);
+            border: 1px solid var(--line);
             border-radius: 999px;
             padding: 6px;
         }
@@ -20,27 +20,27 @@
             text-decoration: none;
             border-radius: 999px;
             padding: 8px 14px;
-            color: #9a3412;
+            color: var(--accent-text);
             font-weight: 700;
             border: 1px solid transparent;
             transition: all .2s ease;
         }
 
         .attendance-tab:hover {
-            background: #fff;
-            border-color: #fdba74;
+            background: var(--surface);
+            border-color: var(--line);
         }
 
         .attendance-tab.active {
-            background: #ea580c;
+            background: var(--accent);
             color: #fff;
-            border-color: #ea580c;
+            border-color: var(--accent);
         }
 
         .attendance-card {
-            border: 1px solid #fed7aa;
+            border: 1px solid var(--line);
             border-radius: 14px;
-            background: linear-gradient(180deg, #fff 0%, #fff7ed 100%);
+            background: linear-gradient(180deg, var(--surface) 0%, var(--accent-soft) 100%);
             padding: 16px;
         }
 
@@ -55,7 +55,7 @@
             margin-bottom: 14px;
             border-radius: 12px;
             overflow: hidden;
-            border: 1px solid #fdba74;
+            border: 1px solid var(--line);
             box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
         }
 
@@ -68,17 +68,17 @@
 
         .primary-btn {
             border: 0;
-            background: #ea580c;
+            background: var(--button-bg);
             color: #fff;
             font-weight: 700;
             border-radius: 10px;
             padding: 11px 16px;
             cursor: pointer;
-            box-shadow: 0 8px 18px rgba(234, 88, 12, 0.28);
+            box-shadow: 0 8px 18px color-mix(in srgb, var(--button-bg) 45%, transparent);
         }
 
         .primary-btn:hover {
-            background: #c2410c;
+            filter: brightness(0.95);
         }
     </style>
 

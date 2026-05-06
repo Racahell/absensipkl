@@ -36,17 +36,23 @@
             align-items: center;
             gap: 6px;
             padding: 8px 12px;
-            border: 1px solid #fdba74;
+            border: 1px solid var(--line);
             border-radius: 10px;
-            background: #fff7ed;
-            color: #9a3412;
+            background: var(--accent-soft);
+            color: var(--accent-text);
             text-decoration: none;
             font-weight: 700;
+            transition: background .15s ease, color .15s ease, border-color .15s ease, filter .15s ease;
+        }
+
+        .validation-bucket:hover {
+            border-color: var(--accent);
+            filter: brightness(0.98);
         }
 
         .validation-bucket.active {
-            background: #ea580c;
-            border-color: #ea580c;
+            background: var(--accent);
+            border-color: var(--accent);
             color: #fff;
         }
 
@@ -183,6 +189,9 @@
             align-items: center;
             gap: 8px;
         }
+        .assessment-grid input[type="checkbox"] {
+            accent-color: var(--accent);
+        }
 
         .detail-modal {
             position: fixed;
@@ -296,27 +305,27 @@
         <div class="validation-buckets">
             <a class="validation-bucket {{ ($bucket ?? 'pending_checkin') === 'pending_checkin' ? 'active' : '' }}"
                 href="{{ route('validasi.index', array_merge($baseQuery, ['bucket' => 'pending_checkin'])) }}">
-                Pending Check-in ({{ $bucketCounts['pending_checkin'] ?? 0 }})
+                Menunggu Check-in ({{ $bucketCounts['pending_checkin'] ?? 0 }})
             </a>
             <a class="validation-bucket {{ ($bucket ?? '') === 'pending_checkout' ? 'active' : '' }}"
                 href="{{ route('validasi.index', array_merge($baseQuery, ['bucket' => 'pending_checkout'])) }}">
-                Pending Check-out ({{ $bucketCounts['pending_checkout'] ?? 0 }})
+                Menunggu Check-out ({{ $bucketCounts['pending_checkout'] ?? 0 }})
             </a>
             <a class="validation-bucket {{ ($bucket ?? '') === 'approved_checkin' ? 'active' : '' }}"
                 href="{{ route('validasi.index', array_merge($baseQuery, ['bucket' => 'approved_checkin'])) }}">
-                Approved Check-in ({{ $bucketCounts['approved_checkin'] ?? 0 }})
+                Disetujui Check-in ({{ $bucketCounts['approved_checkin'] ?? 0 }})
             </a>
             <a class="validation-bucket {{ ($bucket ?? '') === 'approved_checkout' ? 'active' : '' }}"
                 href="{{ route('validasi.index', array_merge($baseQuery, ['bucket' => 'approved_checkout'])) }}">
-                Approved Check-out ({{ $bucketCounts['approved_checkout'] ?? 0 }})
+                Disetujui Check-out ({{ $bucketCounts['approved_checkout'] ?? 0 }})
             </a>
             <a class="validation-bucket {{ ($bucket ?? '') === 'rejected_checkin' ? 'active' : '' }}"
                 href="{{ route('validasi.index', array_merge($baseQuery, ['bucket' => 'rejected_checkin'])) }}">
-                Rejected Check-in ({{ $bucketCounts['rejected_checkin'] ?? 0 }})
+                Ditolak Check-in ({{ $bucketCounts['rejected_checkin'] ?? 0 }})
             </a>
             <a class="validation-bucket {{ ($bucket ?? '') === 'rejected_checkout' ? 'active' : '' }}"
                 href="{{ route('validasi.index', array_merge($baseQuery, ['bucket' => 'rejected_checkout'])) }}">
-                Rejected Check-out ({{ $bucketCounts['rejected_checkout'] ?? 0 }})
+                Ditolak Check-out ({{ $bucketCounts['rejected_checkout'] ?? 0 }})
             </a>
         </div>
 
@@ -467,7 +476,7 @@
                                         <p>Alamat Check-in: {{ $checkInAddress !== '' ? $checkInAddress : '-' }}</p>
                                         <p>Titik Map: {{ $checkInCoord }}</p>
                                         <p>IP Check-in: {{ $attendance->check_in_ip ?: '-' }}</p>
-                                        <p>Device Check-in: -</p>
+                                        <p>Device Check-in: {{ $attendance->check_in_device ?: '-' }}</p>
                                         @if ($attendance->pembimbing_note || $attendance->instruktur_note || $attendance->kajur_note)
                                             <div class="panel mb-10" style="border-color:#fed7aa; background:#fffaf5;">
                                                 <p style="margin:0 0 6px;"><strong>Catatan Validasi</strong></p>
@@ -542,8 +551,7 @@
                                         <p>Alamat Check-out: {{ $checkOutAddress !== '' ? $checkOutAddress : '-' }}</p>
                                         <p>Titik Map: {{ $checkOutCoord }}</p>
                                         <p>IP Check-out: {{ $attendance->check_out_ip ?: '-' }}</p>
-                                        <p>Device Check-out: -</p>
-                                        <p class="mb-10">Ringkasan checkout: {{ $attendance->check_out_summary ?? '-' }}</p>
+                                        <p>Device Check-out: {{ $attendance->check_out_device ?: '-' }}</p>
                                         @if ($attendance->pembimbing_note || $attendance->instruktur_note || $attendance->kajur_note)
                                             <div class="panel mb-10" style="border-color:#fed7aa; background:#fffaf5;">
                                                 <p style="margin:0 0 6px;"><strong>Catatan Validasi</strong></p>
@@ -578,8 +586,9 @@
                                                 <p><strong>Status Laporan:</strong> {{ $reportStatusLabel }}</p>
                                                 <p><strong>Rencana Pekerjaan:</strong> {{ $attendance->report->plan_work ?: '-' }}</p>
                                                 <p><strong>Realisasi Pekerjaan:</strong> {{ $attendance->report->actual_work ?: '-' }}</p>
-                                                <p><strong>Penugasan dari Atasan:</strong> {{ ($attendance->report->assigned_task ?? $attendance->report->special_assignment) ?: '-' }}</p>
-                                                <p><strong>Masalah di Lapangan:</strong> {{ $attendance->report->field_issue ?: '-' }}</p>
+                                                <p><strong>Penugasan Khusus dari Atasan:</strong> {{ ($attendance->report->assigned_task ?? $attendance->report->special_assignment) ?: '-' }}</p>
+                                                <p><strong>Penemuan Masalah di Lapangan:</strong> {{ $attendance->report->field_issue ?: '-' }}</p>
+                                                <p><strong>Catatan untuk Diingat:</strong> {{ $attendance->report->remember_note ?: '-' }}</p>
                                             </div>
                                         @endif
 

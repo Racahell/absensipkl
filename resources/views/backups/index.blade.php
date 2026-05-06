@@ -1,19 +1,47 @@
 @extends('layouts.app', ['title' => $title])
 
 @section('content')
+    <style>
+        .backup-tab-link {
+            text-decoration: none;
+            padding: 8px 12px;
+            border-radius: 999px;
+            border: 1px solid var(--line);
+            color: var(--accent-text);
+            background: var(--accent-soft);
+            font-weight: 600;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            transition: background .15s ease, color .15s ease, border-color .15s ease, filter .15s ease;
+        }
+        .backup-tab-link:hover {
+            filter: brightness(0.98);
+            border-color: var(--accent);
+        }
+        .backup-tab-link:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
+        .backup-tab-link.active {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent);
+        }
+    </style>
     <div class="card mb-14">
         <h3 class="mt-0 text-primary">Backup & Restore Database</h3>
         @if(session('success'))<div class="alert alert-success mb-10">{{ session('success') }}</div>@endif
         @if(session('error'))<div class="alert alert-error mb-10">{{ session('error') }}</div>@endif
 
         <div class="flex gap-8 wrap mb-10">
-            <a href="{{ route('fitur.backup-restore', ['tab' => 'backup']) }}" style="text-decoration:none; padding:8px 12px; border-radius:999px; border:1px solid #fdba74; {{ ($tab ?? 'backup') === 'backup' ? 'background:#ea580c;color:#fff;border-color:#ea580c;' : 'background:#fff7ed;color:#9a3412;' }}">
+            <a href="{{ route('fitur.backup-restore', ['tab' => 'backup']) }}" class="backup-tab-link {{ ($tab ?? 'backup') === 'backup' ? 'active' : '' }}">
                 Backup SQL
             </a>
-            <a href="{{ route('fitur.backup-restore', ['tab' => 'restore']) }}" style="text-decoration:none; padding:8px 12px; border-radius:999px; border:1px solid #fdba74; {{ ($tab ?? '') === 'restore' ? 'background:#ea580c;color:#fff;border-color:#ea580c;' : 'background:#fff7ed;color:#9a3412;' }}">
+            <a href="{{ route('fitur.backup-restore', ['tab' => 'restore']) }}" class="backup-tab-link {{ ($tab ?? '') === 'restore' ? 'active' : '' }}">
                 Restore Database
             </a>
-            <a href="{{ route('fitur.backup-restore', ['tab' => 'delete']) }}" style="text-decoration:none; padding:8px 12px; border-radius:999px; border:1px solid #fdba74; {{ ($tab ?? '') === 'delete' ? 'background:#ea580c;color:#fff;border-color:#ea580c;' : 'background:#fff7ed;color:#9a3412;' }}">
+            <a href="{{ route('fitur.backup-restore', ['tab' => 'delete']) }}" class="backup-tab-link {{ ($tab ?? '') === 'delete' ? 'active' : '' }}">
                 Delete Isi Table
             </a>
         </div>

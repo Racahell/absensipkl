@@ -1,0 +1,50 @@
+﻿<mxfile host="app.diagrams.net" modified="2026-05-03T11:45:00.000Z" agent="Codex" version="24.7.17">
+  <diagram id="ctxbaru" name="DFD Konteks Baru">
+    <mxGraphModel dx="1500" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <mxCell id="sys" value="Sistem Absensi &amp; Monitoring PKL" style="ellipse;html=1;strokeWidth=2;whiteSpace=wrap;" vertex="1" parent="1"><mxGeometry x="600" y="420" width="300" height="180" as="geometry"/></mxCell>
+
+        <mxCell id="r1" value="Siswa" style="shape=rectangle;html=1;strokeWidth=2;" vertex="1" parent="1"><mxGeometry x="660" y="180" width="150" height="60" as="geometry"/></mxCell>
+        <mxCell id="r2" value="Pembimbing PKL" style="shape=rectangle;html=1;strokeWidth=2;" vertex="1" parent="1"><mxGeometry x="220" y="320" width="160" height="60" as="geometry"/></mxCell>
+        <mxCell id="r3" value="Instruktur" style="shape=rectangle;html=1;strokeWidth=2;" vertex="1" parent="1"><mxGeometry x="1120" y="320" width="140" height="60" as="geometry"/></mxCell>
+        <mxCell id="r4" value="Kajur" style="shape=rectangle;html=1;strokeWidth=2;" vertex="1" parent="1"><mxGeometry x="220" y="520" width="120" height="60" as="geometry"/></mxCell>
+        <mxCell id="r5" value="Wali Kelas" style="shape=rectangle;html=1;strokeWidth=2;" vertex="1" parent="1"><mxGeometry x="1120" y="520" width="140" height="60" as="geometry"/></mxCell>
+        <mxCell id="r6" value="Kesiswaan" style="shape=rectangle;html=1;strokeWidth=2;" vertex="1" parent="1"><mxGeometry x="320" y="700" width="140" height="60" as="geometry"/></mxCell>
+        <mxCell id="r7" value="Kepsek" style="shape=rectangle;html=1;strokeWidth=2;" vertex="1" parent="1"><mxGeometry x="520" y="700" width="120" height="60" as="geometry"/></mxCell>
+        <mxCell id="r8" value="Wakil Kepsek" style="shape=rectangle;html=1;strokeWidth=2;" vertex="1" parent="1"><mxGeometry x="700" y="700" width="150" height="60" as="geometry"/></mxCell>
+        <mxCell id="r9" value="Admin Sekolah" style="shape=rectangle;html=1;strokeWidth=2;" vertex="1" parent="1"><mxGeometry x="920" y="700" width="170" height="60" as="geometry"/></mxCell>
+
+        <mxCell id="e11" value="login; check-in/check-out; isi laporan harian; ajukan izin/sakit" style="endArrow=classic;html=1;strokeWidth=1.8;" edge="1" parent="1" source="r1" target="sys"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e12" value="status absensi; status validasi; notifikasi; riwayat" style="endArrow=classic;html=1;strokeWidth=1.8;" edge="1" parent="1" source="sys" target="r1"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="e21" value="login; validasi absensi/laporan/izin; input catatan bimbingan" style="endArrow=classic;html=1;strokeWidth=1.8;" edge="1" parent="1" source="r2" target="sys"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e22" value="daftar pending; detail siswa; hasil validasi; rekap bimbingan" style="endArrow=classic;html=1;strokeWidth=1.8;" edge="1" parent="1" source="sys" target="r2"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="e31" value="login; review lanjutan; approve/reject; input catatan instruktur" style="endArrow=classic;html=1;strokeWidth=1.8;" edge="1" parent="1" source="r3" target="sys"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e32" value="antrian validasi instruktur; status proses; laporan monitoring" style="endArrow=classic;html=1;strokeWidth=1.8;" edge="1" parent="1" source="sys" target="r3"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="e41" value="login; validasi akhir; approve/revisi weekly; input catatan kajur" style="endArrow=classic;html=1;strokeWidth=1.8;" edge="1" parent="1" source="r4" target="sys"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e42" value="rekap jurusan; status final; laporan mingguan; notifikasi" style="endArrow=classic;html=1;strokeWidth=1.8;" edge="1" parent="1" source="sys" target="r4"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="e51" value="login; permintaan monitoring kelas; tindak lanjut siswa" style="endArrow=classic;html=1;strokeWidth=1.8;" edge="1" parent="1" source="r5" target="sys"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e52" value="rekap kehadiran per kelas; status siswa; ringkasan laporan" style="endArrow=classic;html=1;strokeWidth=1.8;" edge="1" parent="1" source="sys" target="r5"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="e61" value="login; permintaan laporan kedisiplinan; tindak lanjut" style="endArrow=classic;html=1;strokeWidth=1.8;" edge="1" parent="1" source="r6" target="sys"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e62" value="dashboard kehadiran; data izin/sakit/alpha; laporan monitoring" style="endArrow=classic;html=1;strokeWidth=1.8;" edge="1" parent="1" source="sys" target="r6"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="e71" value="login; permintaan ringkasan manajemen" style="endArrow=classic;html=1;strokeWidth=1.8;" edge="1" parent="1" source="r7" target="sys"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e72" value="dashboard ringkasan; laporan periodik; statistik kehadiran" style="endArrow=classic;html=1;strokeWidth=1.8;" edge="1" parent="1" source="sys" target="r7"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="e81" value="login; validasi kehadiran/guidance; review tindak lanjut" style="endArrow=classic;html=1;strokeWidth=1.8;" edge="1" parent="1" source="r8" target="sys"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e82" value="daftar validasi; status review; rekap hasil pembinaan" style="endArrow=classic;html=1;strokeWidth=1.8;" edge="1" parent="1" source="sys" target="r8"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="e91" value="login; import/export user; manajemen pengguna; pengaturan sistem; kelola master data" style="endArrow=classic;html=1;strokeWidth=1.8;" edge="1" parent="1" source="r9" target="sys"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e92" value="hasil import/export; status perubahan data; audit log; laporan rekap sistem" style="endArrow=classic;html=1;strokeWidth=1.8;" edge="1" parent="1" source="sys" target="r9"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

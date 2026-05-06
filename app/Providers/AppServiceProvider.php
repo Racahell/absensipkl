@@ -52,6 +52,11 @@ class AppServiceProvider extends ServiceProvider
                 'timezone' => SettingStore::get('attendance_timezone', 'Asia/Jakarta'),
                 'footer_text' => SettingStore::get('footer_text', 'Absensi PKL'),
                 'footer_links' => $footerLinks,
+                'theme_primary' => SettingStore::get('theme_primary', '#f97316'),
+                'theme_sidebar' => SettingStore::get('theme_sidebar', '#ffffff'),
+                'theme_button' => SettingStore::get('theme_button', '#f97316'),
+                'theme_background' => SettingStore::get('theme_background', '#ffffff'),
+                'theme_card' => SettingStore::get('theme_card', '#ffffff'),
             ]);
         });
     }
